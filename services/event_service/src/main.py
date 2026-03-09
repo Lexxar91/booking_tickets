@@ -6,6 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import dispose_engine, get_async_session, get_db_session, init_engine
 from src.core.config import settings
 
+from src.api.v1.events import router as events_router
+
+
 
 @asynccontextmanager
 async def lefispan(app: FastAPI):
@@ -51,6 +54,9 @@ app = FastAPI(
     debug=settings.DEBUG,
     lifespan=lefispan
 )
+
+
+app.include_router(events_router, prefix="/api/v1")
 
 
 @app.get('/health', status_code=status.HTTP_200_OK)
