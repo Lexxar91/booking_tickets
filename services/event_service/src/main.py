@@ -11,7 +11,7 @@ from src.api.v1.events import router as events_router
 
 
 @asynccontextmanager
-async def lefispan(app: FastAPI):
+async def lifespan(app: FastAPI):
     """
     Асинхронный менеджер контекста для управления жизненным циклом приложения.
     
@@ -52,7 +52,7 @@ async def lefispan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_TITLE,
     debug=settings.DEBUG,
-    lifespan=lefispan
+    lifespan=lifespan
 )
 
 
@@ -80,7 +80,7 @@ async def check_health(session: AsyncSession = Depends(get_async_session)):
             "status": "ok",
             "service": "event_service",
             "database": "connected",
-            "date": datetime.now(datetime.timezone.utc)
+            "date": datetime.datetime.now(datetime.timezone.utc)
         }
 
     except Exception as e:
