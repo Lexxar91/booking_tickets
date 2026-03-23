@@ -52,7 +52,7 @@ async def dispose_engine() -> None:
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Контекстный менеджер для получения сессии БД"""
     if not DataBase.async_session:
-        raise RuntimeError("Database engine not initialized. Call init_engine first.")
+        raise RuntimeError("Database engine не инициализирован. Сначала вызовите init_engine.")
     
     async with DataBase.async_session() as session:
         try:
