@@ -2,10 +2,12 @@ from datetime import datetime, timezone
 from sqlalchemy import Boolean, DateTime, String, func
 from sqlalchemy.orm import mapped_column, Mapped
 
-from core.database import Base
+from ..core.database import Base 
 
 
 class User(Base):
+    __table_args__ = {"schema": "auth"}
+   
     id: Mapped[int] = mapped_column(primary_key=True)
     
     email: Mapped[str] = mapped_column(
@@ -15,7 +17,7 @@ class User(Base):
         index=True
     )
     
-    hashed_password: Mapped[str] = mapped_column(String(60), nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     

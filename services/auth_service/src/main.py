@@ -78,7 +78,7 @@ async def check_health(session: AsyncSession = Depends(get_async_session)):
         await session.execute(text('SELECT 1'))
         return {
             "status": "ok",
-            "service": "event_service",
+            "service": settings.APP_TITLE,
             "database": "connected",
             "date": datetime.datetime.now(datetime.timezone.utc)
         }

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from re import S
-from warnings import deprecated
+
 from fastapi.background import P
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -9,7 +9,7 @@ from src.core.config import settings
 from src.schemas.user import TokenPayload
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def hash_password(plain_password: str) -> str:

@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     DEBUG: bool = Field(default=False)
 
     POSTGRES_USER: str = Field(..., min_length=1)
-    POSTGRES_PASSWORD: SecretStr = Field(...) # Секрет!
+    POSTGRES_PASSWORD: SecretStr = Field(...) 
     POSTGRES_SERVER: str = Field(default="localhost")
     POSTGRES_PORT: int = Field(default=5432, ge=1, le=65535)
     POSTGRES_DB: str = Field(..., min_length=1)
@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore" # Игнорировать лишние переменные в .env
+        extra="ignore" 
     )
 
     @computed_field

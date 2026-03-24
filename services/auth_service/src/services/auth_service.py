@@ -39,7 +39,7 @@ class AuthService:
         Это защита от user enumeration: атакующий не может узнать
         существует ли такой email в системе.
         """
-        user = self.repository.get_user_by_email(email)
+        user = await self.repository.get_user_by_email(email)
         if not user or not verify_password(password, user.hashed_password):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -79,7 +79,7 @@ class AuthService:
                 detail="Неверный тип токена"
             )
  
-        user = await self.repository.get_by_id(int(payload.sub))
+        user = await self.repository.get_user_by_id(int(payload.sub))
         if not user or not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
