@@ -28,7 +28,7 @@ def init_engine(database_url: str) -> None:
         max_overflow=20,
         connect_args = {
             "server_settings": {
-                "application_name": "event_service"
+                "application_name": settings.APP_TITLE
             },
     })
 

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 
 class Settings(BaseSettings):
-    APP_TITLE: str = Field(default="Event Service", min_length=1)
+    APP_TITLE: str = Field(default="Booking Service", min_length=1)
     DEBUG: bool = Field(default=False)
 
     POSTGRES_USER: str = Field(..., min_length=1)
@@ -17,13 +17,15 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(default="development")
     LOG_LEVEL: str = Field(default="INFO")
 
-
+    SECRET_KEY: str = Field(..., min_length=32)
+    ALGORITHM: str = Field(default="HS256")
+    
+    EVENT_SERVICE_URL: str = Field(default="http://event_service:8000")
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore" ,
-        case_sensitive=False,
-        env_file_override=False # type: ignore[call-overload]
+        extra="ignore" 
     )
 
     @computed_field
