@@ -56,3 +56,26 @@ class Booking(Base):
 
     def __repr__(self) -> str:
         return f"<Booking id={self.id} user_id={self.user_id} event_id={self.event_id} status={self.status}>"
+    
+
+
+class EventTickets(Base):
+    """
+    Локальная копия счётчика билетов из Event Service.
+
+    Почему она нужна? Мы не можем делать SELECT FOR UPDATE
+    на таблицу в другой БД (event_db). Поэтому храним счётчик
+    билетов локально в booking_db — только то что нужно для
+    атомарного уменьшения при покупке.
+
+    Это паттерн называется 'local cache of critical data'.
+    Счётчик синхронизируется с Event Service при первой покупке.
+    """
+    __tablename__ = "event_tickets" 
+    __table_args__ = {"schema": "booking"}
+
+    event_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    available_tickets: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<EventTickets event_id={self.event_id} available={self.available_tickets}>"

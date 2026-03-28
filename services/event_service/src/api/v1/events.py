@@ -40,7 +40,7 @@ async def create_event(
 
 
 @router.get(
-    "/{event_id}", 
+    "/{event_id: int}", 
     response_model=EventRead,
     summary="Получить мероприятие по ID"
 )
@@ -70,7 +70,7 @@ async def list_events(
 
 
 @router.patch(
-    "/{event_id}",
+    "/{event_id: int}",
     response_model=EventRead,
     summary="Частично обновить мероприятие"
 )
@@ -93,7 +93,7 @@ async def event_update(
 
 
 @router.delete(
-    "/{event_id}",
+    "/{event_id: int}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Удалить мероприятие"
 )

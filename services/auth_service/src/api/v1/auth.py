@@ -12,7 +12,8 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
  
  
 def get_auth_service(session: AsyncSession = Depends(get_async_session)) -> AuthService:
-    return AuthService(UserRepository(session))
+    repository = UserRepository(session)
+    return AuthService(repository)
  
  
 @router.post(
