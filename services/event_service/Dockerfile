@@ -7,7 +7,9 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir --timeout=120 -r requirements.txt
+RUN pip install --no-cache-dir --timeout=120 \
+    --index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+    -r requirements.txt
 
 
 FROM python:3.12-slim AS final

@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from src.models.booking import BookingStatus
 
@@ -21,6 +21,10 @@ class BookingRead(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_serializer('status', return_type=str)
+    def serialize_status(self, value: BookingStatus) -> str:
+        return value.value
 
 
 

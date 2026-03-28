@@ -60,7 +60,7 @@ async def get_my_bookings(
 
 
 @router.get(
-    "/{booking_id: int}",
+    "/{booking_id}",
     response_model=BookingRead,
     summary="Получить бронирование по ID"
 )
@@ -77,7 +77,7 @@ async def get_booking(
 
 
 @router.post(
-    "/{booking_id: int}/cancel",
+    "/{booking_id}/cancel",
     response_model=BookingRead,
     summary="Отменить бронирование"
 )

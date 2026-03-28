@@ -40,7 +40,21 @@ async def create_event(
 
 
 @router.get(
-    "/{event_id: int}", 
+    "/",
+    response_model=list[EventRead],
+    summary="Получить список всех мероприятий"
+)
+async def list_events(
+    limit: int = Query(10, ge=1, le=100, description="Сколько записей вернуть"),
+    offset: int = Query(0, ge=0, description="Сколько записей пропустить"),
+    service: EventServices = Depends(get_event_service)
+):
+    """Возвращает список мероприятий с поддержкой пагинации."""
+    return await service.list_events(limit=limit, offset=offset)
+
+
+@router.get(
+    "/{event_id}", 
     response_model=EventRead,
     summary="Получить мероприятие по ID"
 )
@@ -55,22 +69,8 @@ async def get_event(
 
 
 
-@router.get(
-    "/",
-    response_model=list[EventRead],
-    summary="Получить список всех мероприятий"
-)
-async def list_events(
-    limit: int = Query(10, ge=1, le=100, description="Сколько записей вернуть"),
-    offset: int = Query(0, ge=0, description="Сколько записей пропустить"),
-    service: EventServices = Depends(get_event_service)
-):
-    """Возвращает список мероприятий с поддержкой пагинации."""
-    return await service.list_events(limit=limit, offset=offset)
-
-
 @router.patch(
-    "/{event_id: int}",
+    "/{event_id}",
     response_model=EventRead,
     summary="Частично обновить мероприятие"
 )
@@ -93,7 +93,7 @@ async def event_update(
 
 
 @router.delete(
-    "/{event_id: int}",
+    "/{event_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Удалить мероприятие"
 )

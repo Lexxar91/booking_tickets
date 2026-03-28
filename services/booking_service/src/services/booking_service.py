@@ -123,4 +123,5 @@ class BookingService:
 
         booking.status = BookingStatus.CANCELLED
         await self.session.flush()
+        await self.session.refresh(booking) 
         return booking

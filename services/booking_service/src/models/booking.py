@@ -54,6 +54,10 @@ class Booking(Base):
         nullable=False,
     )
 
+    @property
+    def status_str(self) -> str:
+        return self.status.value
+
     def __repr__(self) -> str:
         return f"<Booking id={self.id} user_id={self.user_id} event_id={self.event_id} status={self.status}>"
     
