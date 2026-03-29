@@ -71,6 +71,28 @@ services:
       retries: 5
     networks:
       - booking_network
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: booking_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
+    ports:
+      - "5672:5672"    # порт для подключения приложений
+      - "15672:15672"  # порт веб-интерфейса управления
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - booking_network
+  
   # ============================================================
   # СЕРВИСЫ
   # ============================================================
@@ -167,10 +189,38 @@ services:
     networks:
       - booking_network
 
+  notification_worker:
+    build:
+      context: ./services/notification_service
+      dockerfile: Dockerfile
+    container_name: booking_notification_worker
+    restart: unless-stopped
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    # Команда запуска воркера
+    # --loglevel=info — показывать все логи
+    # --concurrency=2 — два параллельных воркера
+    # concurrency = количество CPU ядер
+    command: celery -A src.worker worker --loglevel=info --concurrency=2
+    networks:
+      - booking_network
+
 volumes:
   postgres_event_data:
   postgres_auth_data:
   postgres_booking_data:
+  rabbitmq_data:
 
 networks:
   booking_network:
