@@ -171,6 +171,11 @@ services:
       DEBUG: "true"
       SECRET_KEY: ${SECRET_KEY}
       EVENT_SERVICE_URL: "http://event_service:8000"
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST}
     ports:
       - "8003:8000"
     depends_on:
@@ -179,6 +184,8 @@ services:
       event_service:
         condition: service_healthy
       auth_service:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\" || exit 1"]

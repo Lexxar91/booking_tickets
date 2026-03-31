@@ -8,6 +8,7 @@ from src.models.booking import BookingStatus
 class BookingCreate(BaseModel):
     """Схема для создания бронирования — клиент передаёт только event_id."""
     event_id: int = Field(..., gt=0)
+    user_email: str = Field(..., description="Email для отправки билета")
 
 
 class BookingRead(BaseModel):

@@ -3,6 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.celery_client import celery_client
 from src.models.booking import Booking, BookingStatus, EventTickets
 from src.schemas.booking import BookingCreate
 from src.repositories.booking_repo import BookingRepository
@@ -64,11 +65,23 @@ class BookingService:
         event_tickets.available_tickets -= 1
         await self.session.flush()
 
-        return await self.repository.create_booking(
+        booking = await self.repository.create_booking(
             user_id=user_id,
             event_id=booking_data.event_id,
             price_at_booking=Decimal(str(event["price"])),
         )
+
+        celery_client.send_task(
+            "send_booking_confirmation", 
+            kwargs = {
+                "booking_id": booking.id,
+                "user_email": booking_data.user_email,
+                "event_title": event["title"],
+                "price": str(booking.price_at_booking),
+            }
+        )
+
+        return booking
     
     async def get_booking(self, booking_id: int, user_id: int) -> Booking:
         """
@@ -90,11 +103,13 @@ class BookingService:
             )
         return booking
         
+    
     async def get_my_bookings(self, user_id: int) -> list[Booking]:
         """Получение всех бронирований текущего пользователя."""
         return await self.repository.get_by_user_id(user_id)
     
 
+    
     async def cancel_booking(self, booking_id: int, user_id: int) -> Booking:
         """
         Отмена бронирования.
