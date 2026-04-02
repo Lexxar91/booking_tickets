@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-service-config
+  namespace: booking-tickets
+data:
+  APP_TITLE: "Auth Service"
+  DEBUG: "false"
+  POSTGRES_SERVER: "postgres-auth"
+  POSTGRES_PORT: "5432"
+  ALGORITHM: "HS256"

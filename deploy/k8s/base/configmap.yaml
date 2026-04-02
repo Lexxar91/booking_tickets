@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap 
+metadata:
+  name: booking-tickets-config
+  namespace: booking-tickets
+data: 
+  postgres-port: "5432"
+
+   # Имена хостов — в K8s сервисы обращаются друг к другу по имени Service
+  event-postgres-host: "postgres-event"
+  auth-postgres-host: "postgres-auth"
+  booking-postgres-host: "postgres-booking"
+  
+  # RabbitMQ
+  rabbitmq-host: "rabbitmq"
+  rabbitmq-port: "5672"
+  
+  #почта
+  smtp-host: "smtp.gmail.com"
+  smtp-port: "587"
+  
+  # URLs сервисов внутри кластера
+  event-service-url: "http://event-service:8000"
+  auth-service-url: "http://auth-service:8000"
+  
+  # Общие настройки
+  debug: "false"
+  environment: "production"
+  log-level: "INFO"

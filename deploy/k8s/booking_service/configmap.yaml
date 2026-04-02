@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: booking-service-config
+  namespace: booking-tickets
+data:
+  APP_TITLE: "Booking Service"
+  DEBUG: "false"
+  POSTGRES_SERVER: "postgres-booking"
+  POSTGRES_PORT: "5432"
+  RABBITMQ_HOST: "rabbitmq"
+  RABBITMQ_PORT: "5672"
+  EVENT_SERVICE_URL: "http://event-service:8000"

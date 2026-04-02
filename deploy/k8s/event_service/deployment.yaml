@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: event-service
+  namespace: booking-tickets
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: event-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0  # всегда доступна хотя бы одна реплика
+      maxSurge: 1        # поднять одну лишнюю во время обновления
+  template:
+    metadata:
+      labels:
+        app: event-service
+    spec:
+      containers:
+        - name: event-service
+          image: docker.io/library/booking_tickets-event_service:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: event-postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: event-postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: event-postgres-db
+            - name: POSTGRES_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-tickets-config
+                  key: event-postgres-host
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-tickets-config
+                  key: postgres-port
+            - name: APP_TITLE
+              value: "Event Service"
+            - name: DEBUG
+              valueFrom:
+                configMapKeyRef:
+                  name: booking-tickets-config
+                  key: debug
+          # readinessProbe — K8s не будет слать трафик пока сервис не готов
+          # Это предотвращает 502 ошибки во время деплоя
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-service
+  namespace: booking-tickets
+spec:
+  selector:
+    app: event-service
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP

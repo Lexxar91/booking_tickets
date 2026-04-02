@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-event-pvc
+  namespace: booking-tickets
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+
+
+---
+# Deployment — описывает как запускать PostgreSQL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-event
+  namespace: booking-tickets
+spec:
+  replicas: 1  
+  selector:
+    matchLabels:
+      app: postgres-event
+  template:
+    metadata:
+      labels:
+        app: postgres-event
+    spec:
+      containers:
+        - name: postgres-event
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: event-postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: event-postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: event-postgres-db
+          volumeMounts:
+            - name: postgres-event-storage
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - $(POSTGRES_USER)
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"     
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: postgres-event-storage
+          persistentVolumeClaim:
+            claimName: postgres-event-pvc
+
+---
+# Service — стабильный сетевой адрес для PostgreSQL внутри кластера
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-event
+  namespace: booking-tickets
+spec:
+  selector:
+    app: postgres-event 
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP

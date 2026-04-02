@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-booking-pvc
+  namespace: booking-tickets
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-booking
+  namespace: booking-tickets
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-booking
+  template:
+    metadata:
+      labels:
+        app: postgres-booking
+    spec:
+      containers:
+        - name: postgres-booking
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: booking-postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: booking-postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: booking-postgres-db
+          volumeMounts:
+            - name: postgres-booking-storage
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - $(POSTGRES_USER)
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: postgres-booking-storage
+          persistentVolumeClaim:
+            claimName: postgres-booking-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-booking
+  namespace: booking-tickets
+spec:
+  selector:
+    app: postgres-booking
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
