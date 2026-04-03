@@ -7,15 +7,15 @@ from src.core.security import decode_token
 # OAuth2PasswordBearer указывает FastAPI где искать токен —
 # в заголовке Authorization: Bearer <token>
 # tokenUrl — только для Swagger UI чтобы знал куда отправлять логин
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="http://localhost:8002/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
     """
     Dependency — извлекает user_id из JWT токена.
 
-    Booking Service проверяет подпись токена сам — используя тот же SECRET_KEY
-    что и Auth Service. 
+    Booking Service использует только публичный ключ Auth Service.
+    Это позволяет валидировать токен локально, но не даёт выпускать новые токены.
 
     Raises:
         HTTPException 401: Если токен невалидный, протухший или неверного типа.

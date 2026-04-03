@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.dependencies import require_admin
 from src.core.database import get_async_session
 from src.schemas.event import EventCreate, EventRead, EventUpdate
 from src.repositories.event_repo import EventRepository
@@ -27,6 +28,7 @@ def get_event_service(session: AsyncSession = Depends(get_async_session)) -> Eve
 )
 async def create_event(
     event_in: EventCreate,
+    _: int = Depends(require_admin),
     service: EventServices = Depends(get_event_service),
     session: AsyncSession = Depends(get_async_session)
 ):
@@ -77,6 +79,7 @@ async def get_event(
 async def event_update(
     event_id: int,
     event_in: EventUpdate,
+    _: int = Depends(require_admin),
     service: EventServices = Depends(get_event_service),
     session: AsyncSession = Depends(get_async_session)
 ):
@@ -99,6 +102,7 @@ async def event_update(
 )
 async def delete_event(
     event_id: int,
+    _: int = Depends(require_admin),
     session: AsyncSession = Depends(get_async_session),
     service: EventServices = Depends(get_event_service),
 ):
@@ -112,6 +116,5 @@ async def delete_event(
     await service.delete_event(event_id)
     await session.commit()
     
-
 
 

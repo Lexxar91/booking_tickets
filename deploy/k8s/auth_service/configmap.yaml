@@ -6,6 +6,9 @@ metadata:
 data:
   APP_TITLE: "Auth Service"
   DEBUG: "false"
+  SQL_ECHO: "false"
+  ENVIRONMENT: "production"
   POSTGRES_SERVER: "postgres-auth"
   POSTGRES_PORT: "5432"
-  ALGORITHM: "HS256"
+  ALGORITHM: "RS256"
+  JWT_ISSUER: "booking-auth-service"

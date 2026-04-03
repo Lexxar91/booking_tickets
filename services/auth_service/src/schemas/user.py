@@ -38,11 +38,17 @@ class TokenPayload(BaseModel):
     sub: str          
     role: str
     type: str         
-    exp: datetime    
+    exp: datetime
+    iss: str
+    jti: str | None = None
 
 
 class RefreshTokenRequest(BaseModel):
     """Запрос на обновление токенов."""
     refresh_token: str
- 
 
+
+class LogoutRequest(BaseModel):
+    """Запрос на отзыв refresh токена."""
+    refresh_token: str
+ 

@@ -6,7 +6,10 @@ import asyncio
  
 
 from src.core.config import settings
-from src.models.user import Base
+from src.core.database import Base
+from src.models.user import User
+from src.models.refresh_token import RefreshToken
+from src.models.login_attempt import LoginAttempt
  
 # Alembic Config объект
 config = context.config

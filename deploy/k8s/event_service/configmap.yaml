@@ -6,5 +6,9 @@ metadata:
 data:
   APP_TITLE: "Event Service"
   DEBUG: "false"
+  SQL_ECHO: "false"
+  ENVIRONMENT: "production"
   POSTGRES_SERVER: "postgres-event"
   POSTGRES_PORT: "5432"
+  ALGORITHM: "RS256"
+  JWT_ISSUER: "booking-auth-service"

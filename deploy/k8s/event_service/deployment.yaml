@@ -18,12 +18,18 @@ spec:
       labels:
         app: event-service
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: event-service
           image: docker.io/library/booking_tickets-event_service:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8000
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
           env:
             - name: POSTGRES_USER
               valueFrom:
@@ -43,20 +49,48 @@ spec:
             - name: POSTGRES_SERVER
               valueFrom:
                 configMapKeyRef:
-                  name: booking-tickets-config
-                  key: event-postgres-host
+                  name: event-service-config
+                  key: POSTGRES_SERVER
             - name: POSTGRES_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: booking-tickets-config
-                  key: postgres-port
+                  name: event-service-config
+                  key: POSTGRES_PORT
             - name: APP_TITLE
-              value: "Event Service"
+              valueFrom:
+                configMapKeyRef:
+                  name: event-service-config
+                  key: APP_TITLE
             - name: DEBUG
               valueFrom:
                 configMapKeyRef:
-                  name: booking-tickets-config
-                  key: debug
+                  name: event-service-config
+                  key: DEBUG
+            - name: SQL_ECHO
+              valueFrom:
+                configMapKeyRef:
+                  name: event-service-config
+                  key: SQL_ECHO
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: event-service-config
+                  key: ENVIRONMENT
+            - name: ALGORITHM
+              valueFrom:
+                configMapKeyRef:
+                  name: event-service-config
+                  key: ALGORITHM
+            - name: JWT_ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: event-service-config
+                  key: JWT_ISSUER
+            - name: JWT_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: jwt-public-key
           # readinessProbe — K8s не будет слать трафик пока сервис не готов
           # Это предотвращает 502 ошибки во время деплоя
           readinessProbe:

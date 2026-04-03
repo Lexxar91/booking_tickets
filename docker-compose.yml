@@ -14,8 +14,6 @@ services:
       POSTGRES_DB: ${EVENT_POSTGRES_DB}
     volumes:
       - postgres_event_data:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${EVENT_POSTGRES_USER} -d ${EVENT_POSTGRES_DB}"]
       interval: 5s
@@ -38,8 +36,6 @@ services:
       POSTGRES_DB: ${AUTH_POSTGRES_DB}
     volumes:
       - postgres_auth_data:/var/lib/postgresql/data
-    ports:
-      - "5434:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${AUTH_POSTGRES_USER} -d ${AUTH_POSTGRES_DB}"]
       interval: 5s
@@ -62,8 +58,6 @@ services:
       POSTGRES_DB: ${BOOKING_POSTGRES_DB}
     volumes:
       - postgres_booking_data:/var/lib/postgresql/data
-    ports:
-      - "5435:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${BOOKING_POSTGRES_USER} -d ${BOOKING_POSTGRES_DB}"]
       interval: 5s
@@ -81,8 +75,7 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
     ports:
-      - "5672:5672"    # порт для подключения приложений
-      - "15672:15672"  # порт веб-интерфейса управления
+      - "127.0.0.1:15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -110,9 +103,15 @@ services:
       POSTGRES_SERVER: postgres_event
       POSTGRES_PORT: 5432
       APP_TITLE: "Event Service"
-      DEBUG: "true"
+      DEBUG: "false"
+      SQL_ECHO: "false"
+      ENVIRONMENT: "production"
+      JWT_ISSUER: "booking-auth-service"
+      JWT_PUBLIC_KEY_PATH: "/run/secrets/jwt/public.pem"
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
+    volumes:
+      - ./secrets/jwt:/run/secrets/jwt:ro
     depends_on:
       postgres_event:
         condition: service_healthy
@@ -138,10 +137,16 @@ services:
       POSTGRES_SERVER: postgres_auth
       POSTGRES_PORT: 5432
       APP_TITLE: "Auth Service"
-      DEBUG: "true"
-      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: "false"
+      SQL_ECHO: "false"
+      ENVIRONMENT: "production"
+      JWT_ISSUER: "booking-auth-service"
+      JWT_PRIVATE_KEY_PATH: "/run/secrets/jwt/private.pem"
+      JWT_PUBLIC_KEY_PATH: "/run/secrets/jwt/public.pem"
     ports:
-      - "8002:8000"
+      - "127.0.0.1:8002:8000"
+    volumes:
+      - ./secrets/jwt:/run/secrets/jwt:ro
     depends_on:
       postgres_auth:
         condition: service_healthy
@@ -168,8 +173,11 @@ services:
       POSTGRES_SERVER: postgres_booking
       POSTGRES_PORT: 5432
       APP_TITLE: "Booking Service"
-      DEBUG: "true"
-      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: "false"
+      SQL_ECHO: "false"
+      ENVIRONMENT: "production"
+      JWT_ISSUER: "booking-auth-service"
+      JWT_PUBLIC_KEY_PATH: "/run/secrets/jwt/public.pem"
       EVENT_SERVICE_URL: "http://event_service:8000"
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
@@ -177,7 +185,9 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_VHOST: ${RABBITMQ_VHOST}
     ports:
-      - "8003:8000"
+      - "127.0.0.1:8003:8000"
+    volumes:
+      - ./secrets/jwt:/run/secrets/jwt:ro
     depends_on:
       postgres_booking:
         condition: service_healthy

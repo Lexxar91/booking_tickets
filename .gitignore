@@ -2,3 +2,7 @@
 .env
 .vscode
 vscode
+secrets/
+*.pem
+__pycache__/
+*.pyc

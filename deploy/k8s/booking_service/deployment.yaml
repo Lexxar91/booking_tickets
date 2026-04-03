@@ -18,6 +18,7 @@ spec:
       labels:
         app: booking-service
     spec:
+      automountServiceAccountToken: false
       initContainers:
         - name: wait-for-rabbitmq
           image: busybox:1.36
@@ -31,6 +32,11 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8000
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
           envFrom:
             - configMapRef:
                 name: booking-service-config
@@ -50,11 +56,11 @@ spec:
                 secretKeyRef:
                   name: booking-tickets-secrets
                   key: booking-postgres-db
-            - name: SECRET_KEY
+            - name: JWT_PUBLIC_KEY
               valueFrom:
                 secretKeyRef:
                   name: booking-tickets-secrets
-                  key: secret-key
+                  key: jwt-public-key
             - name: RABBITMQ_USER
               valueFrom:
                 secretKeyRef:

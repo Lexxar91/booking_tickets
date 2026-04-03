@@ -18,12 +18,18 @@ spec:
       labels:
         app: auth-service
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: auth-service
           image: docker.io/library/booking_tickets-auth_service:latest
           imagePullPolicy: Never
           ports:
             - containerPort: 8000
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
           envFrom:
             - configMapRef:
                 name: auth-service-config
@@ -43,11 +49,16 @@ spec:
                 secretKeyRef:
                   name: booking-tickets-secrets
                   key: auth-postgres-db
-            - name: SECRET_KEY
+            - name: JWT_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
                   name: booking-tickets-secrets
-                  key: secret-key
+                  key: jwt-private-key
+            - name: JWT_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: jwt-public-key
           readinessProbe:
             httpGet:
               path: /health

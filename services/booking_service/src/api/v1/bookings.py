@@ -56,7 +56,7 @@ async def get_my_bookings(
     current_user_id: int = Depends(get_current_user_id),
 ):
     """Возвращает все бронирования текущего пользователя."""
-    return service.get_my_bookings(user_id=current_user_id)
+    return await service.get_my_bookings(user_id=current_user_id)
 
 
 @router.get(
@@ -73,7 +73,7 @@ async def get_booking(
     Возвращает бронирование по ID.
     Возвращает 403 если бронирование принадлежит другому пользователю.
     """
-    return service.get_booking(booking_id=booking_id, user_id=current_user_id)
+    return await service.get_booking(booking_id=booking_id, user_id=current_user_id)
 
 
 @router.post(

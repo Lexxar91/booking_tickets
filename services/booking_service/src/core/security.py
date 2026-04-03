@@ -8,20 +8,19 @@ def decode_token(token: str) -> TokenPayload:
     """
     Декодируем и валидируем JWT токен.
 
-    Booking Service только ПРОВЕРЯЕТ токены — не создаёт.
-    Проверка происходит локально используя тот же SECRET_KEY что и Auth Service.
-    Никакого запроса к Auth Service не нужно — это главное преимущество JWT.
+    Booking Service только проверяет access токены.
+    Для этого ему нужен только публичный ключ Auth Service,
+    а приватный ключ остаётся внутри auth_service.
 
-    jose автоматически проверяет:
-    - подпись (токен не был подделан)
-    - срок жизни (exp — токен не протух)
+    jose автоматически проверяет подпись, срок жизни токена и issuer.
 
     Raises:
         JWTError: если токен невалидный или протухший.
     """
     payload = jwt.decode(
         token,
-        settings.SECRET_KEY,
-        algorithms=[settings.ALGORITHM]
+        settings.jwt_public_key,
+        algorithms=[settings.ALGORITHM],
+        issuer=settings.JWT_ISSUER,
     )
     return TokenPayload(**payload)

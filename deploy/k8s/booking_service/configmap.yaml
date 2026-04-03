@@ -6,8 +6,12 @@ metadata:
 data:
   APP_TITLE: "Booking Service"
   DEBUG: "false"
+  SQL_ECHO: "false"
+  ENVIRONMENT: "production"
   POSTGRES_SERVER: "postgres-booking"
   POSTGRES_PORT: "5432"
   RABBITMQ_HOST: "rabbitmq"
   RABBITMQ_PORT: "5672"
   EVENT_SERVICE_URL: "http://event-service:8000"
+  ALGORITHM: "RS256"
+  JWT_ISSUER: "booking-auth-service"

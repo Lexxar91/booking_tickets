@@ -13,10 +13,16 @@ spec:
       labels:
         app: notification-worker
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: notification-worker
           image: docker.io/library/booking_tickets-notification_worker:latest
           imagePullPolicy: Never
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
           command:
             - celery
             - -A

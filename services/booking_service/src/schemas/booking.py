@@ -37,3 +37,5 @@ class TokenPayload(BaseModel):
     role: str
     type: str      
     exp: datetime
+    iss: str
+    jti: str | None = None
