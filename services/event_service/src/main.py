@@ -1,6 +1,7 @@
 import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, status, Depends, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import dispose_engine, get_async_session, get_db_session, init_engine
@@ -55,6 +56,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+Instrumentator().instrument(app).expose(app)
 
 app.include_router(events_router, prefix="/api/v1")
 

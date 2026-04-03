@@ -1,0 +1,47 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  - job_name: 'event_service'
+    static_configs:
+      - targets: ['event_service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'auth_service'
+    static_configs:
+      - targets: ['auth_service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'booking_service'
+    static_configs:
+      - targets: ['booking_service:8000']
+    metrics_path: '/metrics'
+
+  - job_name: 'postgres_event'
+    static_configs:
+      - targets: ['postgres-exporter-event:9187']
+
+  - job_name: 'postgres_auth'
+    static_configs:
+      - targets: ['postgres-exporter-auth:9187']
+
+  - job_name: 'postgres_booking'
+    static_configs:
+      - targets: ['postgres-exporter-booking:9187']
+
+  # Метрики RabbitMQ — management плагин экспортирует метрики автоматически
+  - job_name: 'rabbitmq'
+    static_configs:
+      - targets: ['rabbitmq:15692']

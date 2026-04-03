@@ -1,0 +1,103 @@
+services:
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: booking_prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+      - ./monitoring/prometheus/alerts.yaml:/etc/prometheus/alerts.yaml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - booking_network
+  
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: booking_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # Автонастройка Prometheus как datasource
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - booking_network
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: booking_cadvisor
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      # Cadvisor читает метрики из системных файлов Linux
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - booking_network
+
+  # ============================================================
+  # POSTGRES EXPORTER — метрики PostgreSQL
+  # ============================================================
+  postgres-exporter-event:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: booking_postgres_exporter_event
+    restart: unless-stopped
+    environment:
+     DATA_SOURCE_NAME: "postgresql://${EVENT_POSTGRES_USER}:${EVENT_POSTGRES_PASSWORD}@postgres_event:5432/${EVENT_POSTGRES_DB}?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - prometheus
+    networks:
+      - booking_network
+
+  postgres-exporter-auth:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: booking_postgres_exporter_auth
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${AUTH_POSTGRES_USER}:${AUTH_POSTGRES_PASSWORD}@postgres_auth:5432/${AUTH_POSTGRES_DB}?sslmode=disable"
+    ports:
+      - "9188:9187"
+    depends_on:
+      - prometheus
+    networks:
+      - booking_network
+
+  postgres-exporter-booking:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: booking_postgres_exporter_booking
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${BOOKING_POSTGRES_USER}:${BOOKING_POSTGRES_PASSWORD}@postgres_booking:5432/${BOOKING_POSTGRES_DB}?sslmode=disable"
+    ports:
+      - "9189:9187"
+    depends_on:
+      - prometheus
+    networks:
+      - booking_network
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  booking_network:
+    external: true
+    name: booking_tickets_booking_network

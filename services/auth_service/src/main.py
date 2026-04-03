@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, status, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from prometheus_fastapi_instrumentator import Instrumentator
 from src.core.database import dispose_engine, get_async_session, get_db_session, init_engine
 from src.core.config import settings
 
@@ -55,7 +56,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-
+Instrumentator().instrument(app).expose(app)
 app.include_router(auth_router, prefix="/api/v1")
 
 

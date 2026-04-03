@@ -231,4 +231,4 @@ volumes:
 
 networks:
   booking_network:
-    driver: bridge
+    name: booking_tickets_booking_network 
