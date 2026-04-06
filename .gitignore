@@ -6,3 +6,5 @@ secrets/
 *.pem
 __pycache__/
 *.pyc
+.pytest_cache/
+pytest_cache

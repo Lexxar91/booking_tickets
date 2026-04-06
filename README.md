@@ -292,9 +292,7 @@ kubectl exec -n booking-tickets deploy/booking-service -- alembic upgrade head
 
 Следующие шаги для приближения к полноценному production:
 
-- [ ] Unit и интеграционные тесты
 - [ ] CI/CD пайплайн (GitHub Actions / GitLab CI)
-- [ ] Линтеры и форматтеры (ruff, black, mypy)
 - [ ] Структурированное логирование (JSON) + агрегация (Loki / ELK)
 - [ ] Distributed tracing (OpenTelemetry / Jaeger)
 - [ ] Redis вместо RPC для Celery result backend
