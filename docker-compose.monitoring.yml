@@ -29,8 +29,10 @@ services:
       GF_PATHS_PROVISIONING: /etc/grafana/provisioning
     volumes:
       - grafana_data:/var/lib/grafana
-      # Автонастройка Prometheus как datasource
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      # Автонастройка datasource и dashboards
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/provisioning/dashboards/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./monitoring/grafana/provisioning/dashboards/json:/var/lib/grafana/dashboards-json
     depends_on:
       - prometheus
     networks:
@@ -90,6 +92,23 @@ services:
       - "9189:9187"
     depends_on:
       - prometheus
+    networks:
+      - booking_network
+
+  # ============================================================
+  # NOTIFICATION SERVICE METRICS — лёгкий HTTP server для Celery worker метрик
+  # ============================================================
+  notification_metrics:
+    build:
+      context: ./services/notification_service
+      dockerfile: Dockerfile
+    container_name: booking_notification_metrics
+    restart: unless-stopped
+    command: python -m src.metrics_server
+    ports:
+      - "9100:9100"
+    environment:
+      METRICS_PORT: 9100
     networks:
       - booking_network
 

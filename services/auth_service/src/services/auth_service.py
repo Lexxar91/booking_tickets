@@ -3,6 +3,14 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 
 from src.core.config import settings
+from src.core.metrics import (
+    decrement_active_sessions,
+    increment_active_sessions,
+    track_login_attempt,
+    track_logout,
+    track_registration,
+    track_token_refresh,
+)
 from src.core.security import (
     JWTError,
     create_access_token,
@@ -39,10 +47,12 @@ class AuthService:
     async def register(self, user_data: UserRegister) -> User:
         check_email_in_db = await self.repository.get_user_by_email(user_data.email)
         if check_email_in_db:
+            track_registration(status="duplicate")
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Пользователь с таким email уже существует",
             )
+        track_registration(status="success")
         return await self.repository.create_user(user_data)
 
     async def login(self, email: str, password: str, client_ip: str) -> TokenPair:
@@ -51,6 +61,7 @@ class AuthService:
         attempt = await self.login_attempt_repository.get_by_bucket(bucket)
 
         if attempt and attempt.blocked_until and attempt.blocked_until > now:
+            track_login_attempt(status="rate_limited")
             retry_after = max(1, int((attempt.blocked_until - now).total_seconds()))
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -60,6 +71,7 @@ class AuthService:
 
         user = await self.repository.get_user_by_email(email)
         if not user or not verify_password(password, user.hashed_password):
+            track_login_attempt(status="failure")
             failed_attempt = await self.login_attempt_repository.record_failure(
                 bucket=bucket,
                 now=now,
@@ -81,6 +93,7 @@ class AuthService:
             )
 
         if not user.is_active:
+            track_login_attempt(status="failure")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Аккаунт заблокирован",
@@ -94,6 +107,9 @@ class AuthService:
             expires_at=expires_at,
         )
 
+        track_login_attempt(status="success")
+        increment_active_sessions()
+
         return TokenPair(
             access_token=create_access_token(user.id, user.role),
             refresh_token=refresh_token,
@@ -103,12 +119,14 @@ class AuthService:
         try:
             payload = decode_token(refresh_token)
         except JWTError:
+            track_token_refresh(status="invalid")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Невалидный или протухший токен",
             )
 
         if payload.type != "refresh" or payload.jti is None:
+            track_token_refresh(status="invalid")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Неверный тип токена",
@@ -122,6 +140,7 @@ class AuthService:
             now=now,
         )
         if stored_token is None:
+            track_token_refresh(status="revoked")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Refresh токен отозван или истёк",
@@ -142,6 +161,8 @@ class AuthService:
             expires_at=expires_at,
         )
 
+        track_token_refresh(status="success")
+
         return TokenPair(
             access_token=create_access_token(user.id, user.role),
             refresh_token=new_refresh_token,
@@ -151,12 +172,14 @@ class AuthService:
         try:
             payload = decode_token(refresh_token)
         except JWTError:
+            track_logout(status="not_found")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Невалидный или протухший токен",
             )
 
         if payload.type != "refresh" or payload.jti is None:
+            track_logout(status="not_found")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Неверный тип токена",
@@ -168,9 +191,12 @@ class AuthService:
             now=self._now(),
         )
         if token is None:
+            track_logout(status="not_found")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Refresh токен уже отозван или истёк",
             )
 
         await self.refresh_token_repository.revoke(token, revoked_at=self._now())
+        track_logout(status="success")
+        decrement_active_sessions()

@@ -10,6 +10,7 @@ colorama==0.4.6 ; python_version >= "3.12" and python_version < "4.0" and platfo
 kombu==5.6.2 ; python_version >= "3.12" and python_version < "4.0"
 packaging==26.0 ; python_version >= "3.12" and python_version < "4.0"
 pillow==12.1.1 ; python_version >= "3.12" and python_version < "4"
+prometheus-client==0.22.1 ; python_version >= "3.12" and python_version < "4.0"
 prompt-toolkit==3.0.52 ; python_version >= "3.12" and python_version < "4.0"
 python-dateutil==2.9.0.post0 ; python_version >= "3.12" and python_version < "4.0"
 reportlab==4.4.10 ; python_version >= "3.12" and python_version < "4"

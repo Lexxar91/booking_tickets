@@ -80,6 +80,7 @@
 │   ├── event_service/         # Управление мероприятиями
 │   ├── booking_service/       # Бронирование билетов
 │   └── notification_service/  # Celery worker для email-уведомлений
+├── frontend/                  # Web UI для ручной проверки сценариев через браузер
 ├── deploy/
 │   ├── k8s/                   # Kubernetes манифесты
 │   └── nginx/                 # NGINX конфигурация
@@ -89,6 +90,7 @@
 ├── scripts/                   # Вспомогательные скрипты
 ├── secrets/                   # JWT ключи (не коммитить!)
 ├── docker-compose.yml
+├── docker-compose.frontend.yml
 ├── docker-compose.monitoring.yml
 └── .env.example
 ```
@@ -171,6 +173,63 @@ Swagger-документация доступна по адресам:
 
 ---
 
+## 🖥️ Frontend UI
+
+В проекте есть отдельный web-интерфейс для ручной проверки основных сценариев:
+
+- регистрация и логин
+- refresh / logout
+- просмотр событий
+- `admin` CRUD для мероприятий
+- создание и отмена бронирований
+- health-check по API сервисам
+
+Frontend вынесен в отдельный compose-файл, чтобы его можно было поднимать независимо от backend и не ловить конфликты пересоздания контейнеров.
+
+### Запуск frontend отдельно
+
+Сначала должен быть поднят основной backend:
+
+```bash
+docker compose up -d
+```
+
+Затем отдельно запускается frontend:
+
+```bash
+docker compose -f docker-compose.frontend.yml up -d
+```
+
+Открыть интерфейс можно по адресу:
+
+```text
+https://127.0.0.1:3443
+```
+
+Локально используется self-signed сертификат, поэтому браузер покажет предупреждение безопасности. Для разработки это нормально: нужно один раз подтвердить переход на страницу.
+
+### Пересборка frontend после изменений
+
+```bash
+docker compose -f docker-compose.frontend.yml build
+docker compose -f docker-compose.frontend.yml up -d
+```
+
+### Остановка только frontend
+
+```bash
+docker compose -f docker-compose.frontend.yml down
+```
+
+Важно:
+
+- frontend не поднимает backend-сервисы сам, он подключается к уже существующей Docker-сети `booking_tickets_booking_network`
+- если backend уже запущен, для интерфейса достаточно только `docker compose -f docker-compose.frontend.yml up -d`
+- если API контейнеры остановлены, интерфейс откроется, но запросы к сервисам работать не будут
+- `http://127.0.0.1:3001` теперь только перенаправляет на защищённый `https://127.0.0.1:3443`
+
+---
+
 ## 📡 API Endpoints
 
 ### Auth Service (`:8002`)
@@ -227,6 +286,53 @@ docker compose -f docker-compose.monitoring.yml up -d
 | Grafana | http://localhost:3000 | admin / admin |
 | cAdvisor | http://localhost:8080 | — |
 | RabbitMQ UI | http://localhost:15672 | guest / guest |
+
+### Grafana Dashboards (авто-provisioning)
+
+При запуске мониторинга Grafana автоматически загружает 5 дашбордов:
+
+| Дашборд | Описание |
+|---|---|
+| **API Services Overview** | RPS, error rate, latency (p50/p95/p99), статус-коды, uptime всех API сервисов |
+| **PostgreSQL Overview** | Активные соединения, использование connections (%), размер БД, транзакции, deadlocks |
+| **Container Resources (cAdvisor)** | CPU, RAM, сетевой I/O, использование диска контейнерами |
+| **RabbitMQ Overview** | Публикации, ack/delivery, глубина очередей, подключения, unacked messages |
+| **Business Metrics** | Кастомные бизнес-метрики: регистрации, логины, бронирования, проданные билеты, email-уведомления |
+
+### Бизнес-метрики по сервисам
+
+#### Auth Service
+| Метрика | Тип | Labels | Описание |
+|---|---|---|---|
+| `auth_login_attempts_total` | Counter | `status` (success/failure/rate_limited) | Попытки входа |
+| `auth_registrations_total` | Counter | `status` (success/duplicate) | Регистрации |
+| `auth_token_refreshes_total` | Counter | `status` (success/revoked/invalid) | Обновления refresh-токенов |
+| `auth_logouts_total` | Counter | `status` (success/not_found) | Выходы из системы |
+| `auth_active_sessions` | Gauge | — | Текущие активные сессии |
+
+#### Booking Service
+| Метрика | Тип | Labels | Описание |
+|---|---|---|---|
+| `bookings_created_total` | Counter | `status` (success/failed) | Созданные бронирования |
+| `bookings_cancelled_total` | Counter | `status` (success/not_found) | Отменённые бронирования |
+| `bookings_retrieved_total` | Counter | — | Запросы на получение бронирований |
+| `tickets_sold_per_event` | Gauge | `event_id` | Проданные билеты по мероприятиям |
+| `tickets_available_per_event` | Gauge | `event_id` | Доступные билеты по мероприятиям |
+
+#### Event Service
+| Метрика | Тип | Labels | Описание |
+|---|---|---|---|
+| `events_created_total` | Counter | — | Созданные мероприятия |
+| `events_updated_total` | Counter | — | Обновлённые мероприятия |
+| `events_deleted_total` | Counter | — | Удалённые мероприятия |
+| `total_events` | Gauge | — | Общее количество мероприятий в системе |
+
+#### Notification Service
+| Метрика | Тип | Labels | Описание |
+|---|---|---|---|
+| `emails_sent_total` | Counter | `status` (success/failed) | Отправленные письма |
+| `emails_retry_total` | Counter | — | Повторные попытки отправки |
+| `pdf_generated_total` | Counter | `status` (success/failed) | Сгенерированные PDF-билеты |
 
 ### Алерты
 
@@ -294,8 +400,6 @@ kubectl exec -n booking-tickets deploy/booking-service -- alembic upgrade head
 
 - [ ] CI/CD пайплайн (GitHub Actions / GitLab CI)
 - [ ] Структурированное логирование (JSON) + агрегация (Loki / ELK)
-- [ ] Distributed tracing (OpenTelemetry / Jaeger)
-- [ ] Redis вместо RPC для Celery result backend
 - [ ] Интеграция платёжной системы
 
 ---

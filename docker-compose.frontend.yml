@@ -1,0 +1,19 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: booking_frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:80"
+      - "127.0.0.1:3443:443"
+    volumes:
+      - ./secrets/tls:/run/secrets/tls:ro
+    networks:
+      - booking_frontend_network
+
+networks:
+  booking_frontend_network:
+    external: true
+    name: booking_tickets_booking_network
