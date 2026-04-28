@@ -7,6 +7,9 @@
 - изолировать unit-тесты от локальной БД и внешней инфраструктуры
 """
 
+from src.schemas.event import EventCreate, EventUpdate
+from src.schemas.auth import TokenPayload
+from src.models.event import Event
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -26,15 +29,11 @@ os.environ["DEBUG"] = "false"
 os.environ["SQL_ECHO"] = "false"
 
 
-from src.models.event import Event
-from src.schemas.auth import TokenPayload
-from src.schemas.event import EventCreate, EventUpdate
-
-
 @pytest.fixture(scope="session")
 def rsa_keys():
-    """Генерируем RSA-пару один раз на сессию тестов."""
-    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    """Выполняет rsa keys."""
+    private_key = rsa.generate_private_key(
+        public_exponent=65537, key_size=2048)
     private_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
@@ -49,12 +48,7 @@ def rsa_keys():
 
 @pytest.fixture(autouse=True)
 def patch_settings(monkeypatch, rsa_keys):
-    """
-    Подменяем settings на уровень конкретного теста.
-
-    Такой подход держит unit-тесты изолированными и не тащит в них
-    локальные переменные окружения или compose/k8s-конфигурацию.
-    """
+    """Выполняет patch settings."""
     import src.core.config
     import src.core.dependencies
     import src.core.security
@@ -70,7 +64,8 @@ def patch_settings(monkeypatch, rsa_keys):
     )
 
     monkeypatch.setattr(src.core.config, "settings", fake_settings)
-    monkeypatch.setattr(src.core.dependencies, "decode_token", src.core.security.decode_token)
+    monkeypatch.setattr(src.core.dependencies, "decode_token",
+                        src.core.security.decode_token)
     monkeypatch.setattr(src.core.security, "settings", fake_settings)
 
     return fake_settings
@@ -78,7 +73,7 @@ def patch_settings(monkeypatch, rsa_keys):
 
 @pytest.fixture()
 def mock_session():
-    """Минимальный AsyncSession double для unit-тестов."""
+    """Выполняет mock session."""
     session = AsyncMock()
     session.execute = AsyncMock()
     session.flush = AsyncMock()
@@ -90,7 +85,7 @@ def mock_session():
 
 @pytest.fixture()
 def make_event():
-    """Фабрика реальных объектов Event."""
+    """Выполняет make event."""
 
     def _make(
         event_id: int = 1,
@@ -101,6 +96,7 @@ def make_event():
         date_start: datetime | None = None,
         date_end: datetime | None = None,
     ) -> Event:
+        """Создает тестовый объект с переопределениями."""
         start = date_start or datetime(2026, 4, 20, 18, 0, tzinfo=timezone.utc)
         end = date_end or datetime(2026, 4, 20, 21, 0, tzinfo=timezone.utc)
 
@@ -122,7 +118,7 @@ def make_event():
 
 @pytest.fixture()
 def event_create_data() -> EventCreate:
-    """Готовые входные данные для создания мероприятия."""
+    """Выполняет event create data."""
     return EventCreate(
         title="Concert",
         description="Big live show",
@@ -135,15 +131,20 @@ def event_create_data() -> EventCreate:
 
 @pytest.fixture()
 def event_update_data() -> EventUpdate:
-    """Готовые входные данные для обновления мероприятия."""
+    """Выполняет event update data."""
     return EventUpdate(title="Updated concert", price=Decimal("2000.00"))
 
 
 @pytest.fixture()
 def make_access_token(rsa_keys):
-    """Фабрика валидных access JWT для dependency-тестов."""
+    """Выполняет make access token."""
 
-    def _make(sub: str = "1", role: str = "user", token_type: str = "access", iss: str = "booking-auth-service"):
+    def _make(
+            sub: str = "1",
+            role: str = "user",
+            token_type: str = "access",
+            iss: str = "booking-auth-service"):
+        """Создает тестовый объект с переопределениями."""
         private_pem, _ = rsa_keys
         payload = {
             "sub": sub,
@@ -160,6 +161,7 @@ def make_access_token(rsa_keys):
 
 @pytest.fixture()
 def admin_payload() -> TokenPayload:
+    """Возвращает payload администратора."""
     return TokenPayload(
         sub="1",
         role="admin",
@@ -171,6 +173,7 @@ def admin_payload() -> TokenPayload:
 
 @pytest.fixture()
 def user_payload() -> TokenPayload:
+    """Возвращает payload пользователя."""
     return TokenPayload(
         sub="2",
         role="user",

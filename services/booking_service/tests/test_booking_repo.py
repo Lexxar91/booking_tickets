@@ -15,12 +15,14 @@ from src.repositories.booking_repo import BookingRepository
 
 
 def _fake_scalar_result(value):
+    """Создает фейковый scalar-результат."""
     result = MagicMock()
     result.scalar_one_or_none.return_value = value
     return result
 
 
 def _fake_scalars_result(values):
+    """Создает фейковый scalars-результат."""
     scalars = MagicMock()
     scalars.all.return_value = values
     result = MagicMock()
@@ -29,7 +31,10 @@ def _fake_scalars_result(values):
 
 
 class TestBookingRepository:
-    async def test_create_booking_persists_confirmed_booking(self, mock_session):
+    """Тесты репозитория бронирований."""
+    async def test_create_booking_persists_confirmed_booking(
+            self, mock_session):
+        """Проверяет сохранение данных."""
         repo = BookingRepository(mock_session)
 
         booking = await repo.create_booking(
@@ -45,7 +50,9 @@ class TestBookingRepository:
         assert booking.event_id == 12
         assert booking.status == BookingStatus.CONFIRMED
 
-    async def test_get_by_booking_id_returns_booking(self, mock_session, make_booking):
+    async def test_get_by_booking_id_returns_booking(
+            self, mock_session, make_booking):
+        """Проверяет ожидаемый результат."""
         booking = make_booking(booking_id=8)
         mock_session.execute.return_value = _fake_scalar_result(booking)
         repo = BookingRepository(mock_session)
@@ -54,8 +61,11 @@ class TestBookingRepository:
 
         assert result is booking
 
-    async def test_get_by_user_id_returns_all_user_bookings(self, mock_session, make_booking):
-        bookings = [make_booking(booking_id=1, user_id=5), make_booking(booking_id=2, user_id=5)]
+    async def test_get_by_user_id_returns_all_user_bookings(
+            self, mock_session, make_booking):
+        """Проверяет ожидаемый результат."""
+        bookings = [make_booking(booking_id=1, user_id=5),
+                    make_booking(booking_id=2, user_id=5)]
         mock_session.execute.return_value = _fake_scalars_result(bookings)
         repo = BookingRepository(mock_session)
 

@@ -1,17 +1,23 @@
 import datetime
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, status, Depends, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, status
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.database import dispose_engine, get_async_session, get_db_session, init_engine
-from src.core.config import settings
 from src.api.v1.bookings import router as bookings_router
+from src.core.config import settings
+from src.core.database import (
+    dispose_engine,
+    get_async_session,
+    get_db_session,
+    init_engine,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Управляет запуском и остановкой приложения."""
     print(f"INFO: Service '{settings.APP_TITLE}' is starting up...")
 
     try:
@@ -52,13 +58,14 @@ app.include_router(bookings_router, prefix="/api/v1")
 
 @app.get("/health", status_code=status.HTTP_200_OK)
 async def check_health(session: AsyncSession = Depends(get_async_session)):
+    """Проверяет доступность сервиса и базы данных."""
     try:
         await session.execute(text("SELECT 1"))
         return {
             "status": "ok",
             "service": settings.APP_TITLE,
             "database": "connected",
-            "date": datetime.datetime.now(datetime.timezone.utc)
+            "date": datetime.datetime.now(datetime.timezone.utc),
         }
     except Exception as e:
         print(f"CRITICAL: Database connection failed: {e}")

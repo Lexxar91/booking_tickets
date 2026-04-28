@@ -12,10 +12,9 @@ router = APIRouter(prefix="/events", tags=["Events"])
 
 
 # --- Зависимость (Dependency) для сборки сервиса ---
-def get_event_service(session: AsyncSession = Depends(get_async_session)) -> EventServices:
-    """
-    Фабрика для Dependency Injection.
-    """
+def get_event_service(session: AsyncSession = Depends(
+        get_async_session)) -> EventServices:
+    """Возвращает данные для event service."""
     repository = EventRepository(session)
     return EventServices(repository)
 
@@ -32,10 +31,7 @@ async def create_event(
     service: EventServices = Depends(get_event_service),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """
-    Создает новое мероприятие. 
-    Транзакция коммитится только если бизнес-логика отработала без ошибок.
-    """
+    """Создает мероприятие через API."""
     new_event = await service.create_event(event_in)
     await session.commit()
     return new_event
@@ -47,28 +43,26 @@ async def create_event(
     summary="Получить список всех мероприятий"
 )
 async def list_events(
-    limit: int = Query(10, ge=1, le=100, description="Сколько записей вернуть"),
+    limit: int = Query(
+        10, ge=1, le=100, description="Сколько записей вернуть"),
     offset: int = Query(0, ge=0, description="Сколько записей пропустить"),
     service: EventServices = Depends(get_event_service)
 ):
-    """Возвращает список мероприятий с поддержкой пагинации."""
+    """Возвращает список мероприятий."""
     return await service.list_events(limit=limit, offset=offset)
 
 
 @router.get(
-    "/{event_id}", 
+    "/{event_id}",
     response_model=EventRead,
     summary="Получить мероприятие по ID"
 )
 async def get_event(
-    event_id: int, 
+    event_id: int,
     service: EventServices = Depends(get_event_service)
 ):
-    """
-    Возвращает данные мероприятия по его уникальному идентификатору.
-    """
+    """Возвращает данные для event."""
     return await service.get_event(event_id)
-
 
 
 @router.patch(
@@ -83,13 +77,7 @@ async def event_update(
     service: EventServices = Depends(get_event_service),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """
-    Частично обновляет мероприятие (PATCH-семантика).
-    Клиент передаёт только те поля, которые нужно изменить.
-    Непереданные поля остаются без изменений.
-
-    Возвращает 404 если мероприятие не найдено.
-    """
+    """Обновляет мероприятие через API."""
     event_updated = await service.event_update(event_id, event_in)
     await session.commit()
     return event_updated
@@ -106,15 +94,6 @@ async def delete_event(
     session: AsyncSession = Depends(get_async_session),
     service: EventServices = Depends(get_event_service),
 ):
-    """
-    Удаляет мероприятие по ID.
-
-    Возвращает 204 No Content — стандарт REST для успешного удаления.
-    Тело ответа пустое (возвращать нечего — объект удалён).
-    Возвращает 404 если мероприятие не было найдено.
-    """
+    """Удаляет мероприятие через API."""
     await service.delete_event(event_id)
     await session.commit()
-    
-
-

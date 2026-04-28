@@ -10,22 +10,25 @@ def _load_key_material(
     path_value: str | None,
     setting_name: str,
 ) -> str:
+    """Читает ключ из файла или переменной окружения."""
     if inline_value:
         return inline_value.get_secret_value().replace("\\n", "\n")
 
     if path_value:
         return Path(path_value).read_text(encoding="utf-8")
 
-    raise ValueError(f"{setting_name} must be provided via env value or file path")
+    raise ValueError(
+        f"{setting_name} must be provided via env value or file path")
 
 
 class Settings(BaseSettings):
+    """Хранит настройки сервиса."""
     APP_TITLE: str = Field(default="Booking Service", min_length=1)
     DEBUG: bool = Field(default=False)
     SQL_ECHO: bool = Field(default=False)
 
     POSTGRES_USER: str = Field(..., min_length=1)
-    POSTGRES_PASSWORD: SecretStr = Field(...) 
+    POSTGRES_PASSWORD: SecretStr = Field(...)
     POSTGRES_SERVER: str = Field(default="localhost")
     POSTGRES_PORT: int = Field(default=5432, ge=1, le=65535)
     POSTGRES_DB: str = Field(..., min_length=1)
@@ -38,19 +41,19 @@ class Settings(BaseSettings):
     JWT_ISSUER: str = Field(default="booking-auth-service")
     JWT_PUBLIC_KEY: SecretStr | None = Field(default=None)
     JWT_PUBLIC_KEY_PATH: str | None = Field(default=None)
-    
+
     EVENT_SERVICE_URL: str = Field(default="http://event_service:8000")
-    
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore" 
+        extra="ignore"
     )
 
     @computed_field
     @property
     def database_url(self) -> str:
-        """Безопасное формирование DSN"""
+        """Собирает URL подключения к базе данных."""
         dsn = PostgresDsn.build(
             scheme="postgresql+asyncpg",
             username=self.POSTGRES_USER,
@@ -64,6 +67,7 @@ class Settings(BaseSettings):
 
     @property
     def jwt_public_key(self) -> str:
+        """Возвращает публичный JWT-ключ."""
         return _load_key_material(
             inline_value=self.JWT_PUBLIC_KEY,
             path_value=self.JWT_PUBLIC_KEY_PATH,

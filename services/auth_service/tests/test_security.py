@@ -24,9 +24,10 @@ from src.core.security import (
 
 
 class TestCreateAccessToken:
-    """Тесты на создание access-токена."""
+    """Тесты для CreateAccessToken."""
 
     def test_access_token_decodes_correctly(self):
+        """Проверяет декодирование токена."""
         token = create_access_token(user_id=42, role="admin")
         payload = decode_token(token)
 
@@ -37,7 +38,7 @@ class TestCreateAccessToken:
         assert payload.jti is None  # у access-токена нет jti
 
     def test_access_token_has_correct_expiry(self):
-        """Токен должен истекать через ACCESS_TOKEN_EXPIRE_MINUTES."""
+        """Проверяет рабочий сценарий."""
         token = create_access_token(user_id=1, role="user")
         payload = decode_token(token)
 
@@ -47,10 +48,12 @@ class TestCreateAccessToken:
 
 
 class TestCreateRefreshToken:
-    """Тесты на создание refresh-токена."""
+    """Тесты для CreateRefreshToken."""
 
     def test_refresh_token_decodes_correctly(self):
-        token_str, jti, expires_at = create_refresh_token(user_id=7, role="user")
+        """Проверяет декодирование токена."""
+        token_str, jti, expires_at = create_refresh_token(
+            user_id=7, role="user")
         payload = decode_token(token_str)
 
         assert payload.sub == "7"
@@ -60,7 +63,7 @@ class TestCreateRefreshToken:
         assert payload.iss == "booking-auth-service"
 
     def test_refresh_token_jti_is_unique(self):
-        """Каждый refresh-токен должен иметь уникальный jti."""
+        """Проверяет рабочий сценарий."""
         token1, jti1, _ = create_refresh_token(user_id=1, role="user")
         token2, jti2, _ = create_refresh_token(user_id=1, role="user")
 
@@ -71,7 +74,7 @@ class TestCreateRefreshToken:
         assert payload2.jti == jti2
 
     def test_refresh_token_has_long_expiry(self):
-        """Refresh-токен живёт REFRESH_TOKEN_EXPIRE_DAYS дней."""
+        """Проверяет рабочий сценарий."""
         _, _, expires_at = create_refresh_token(user_id=1, role="user")
 
         now = datetime.now(timezone.utc)
@@ -80,10 +83,10 @@ class TestCreateRefreshToken:
 
 
 class TestDecodeToken:
-    """Тесты на декодирование токена."""
+    """Тесты для DecodeToken."""
 
     def test_expired_token_raises_jwt_error(self, rsa_keys):
-        """Истёкший токен → JWTError."""
+        """Проверяет сценарий с ошибкой."""
         private_pem, _ = rsa_keys
         expired_payload = {
             "sub": "1",
@@ -93,13 +96,14 @@ class TestDecodeToken:
             "iat": datetime.now(timezone.utc) - timedelta(hours=1),
             "iss": "booking-auth-service",
         }
-        expired_token = jwt.encode(expired_payload, private_pem, algorithm="RS256")
+        expired_token = jwt.encode(
+            expired_payload, private_pem, algorithm="RS256")
 
         with pytest.raises(JWTError):
             decode_token(expired_token)
 
     def test_wrong_issuer_raises_jwt_error(self, rsa_keys):
-        """Токен с неправиль issuer → JWTError."""
+        """Проверяет сценарий с ошибкой."""
         private_pem, _ = rsa_keys
         bad_payload = {
             "sub": "1",
@@ -115,12 +119,13 @@ class TestDecodeToken:
             decode_token(bad_token)
 
     def test_tampered_token_raises_jwt_error(self, rsa_keys):
-        """Токен с другой подписью → JWTError."""
+        """Проверяет сценарий с ошибкой."""
         # Генерируем другую пару ключей — подпись не совпадёт
         from cryptography.hazmat.primitives.asymmetric import rsa
         from cryptography.hazmat.primitives import serialization
 
-        other_private = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        other_private = rsa.generate_private_key(
+            public_exponent=65537, key_size=2048)
         other_pem = other_private.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
@@ -141,35 +146,38 @@ class TestDecodeToken:
             decode_token(tampered_token)
 
     def test_malformed_token_raises_jwt_error(self):
-        """Бессмысленная строка → JWTError."""
+        """Проверяет сценарий с ошибкой."""
         with pytest.raises(JWTError):
             decode_token("not.a.jwt")
 
 
 class TestPasswordHashing:
-    """Тесты на хэширование паролей (Argon2)."""
+    """Тесты для PasswordHashing."""
 
     def test_hash_password_returns_string(self):
+        """Проверяет ожидаемый результат."""
         hashed = hash_password("MyStr0ngP@ss!")
         assert isinstance(hashed, str)
         assert "$argon2" in hashed
 
     def test_verify_password_correct(self):
+        """Проверяет проверку пароля."""
         hashed = hash_password("correct_password")
         assert verify_password("correct_password", hashed) is True
 
     def test_verify_password_incorrect(self):
+        """Проверяет проверку пароля."""
         hashed = hash_password("correct_password")
         assert verify_password("wrong_password", hashed) is False
 
     def test_hash_is_different_each_time(self):
-        """Argon2 использует случайную соль — хэши должны отличаться."""
+        """Проверяет рабочий сценарий."""
         h1 = hash_password("same_password")
         h2 = hash_password("same_password")
         assert h1 != h2
 
     def test_both_verify_same(self):
-        """Но оба хэша верифицируются."""
+        """Проверяет проверку пароля."""
         password = "same_password"
         h1 = hash_password(password)
         h2 = hash_password(password)

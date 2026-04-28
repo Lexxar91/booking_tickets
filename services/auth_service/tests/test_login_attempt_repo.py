@@ -15,22 +15,25 @@ from src.repositories.login_attempt_repo import LoginAttemptRepository
 
 
 def _fake_result(scalar_value):
-    """Обёртка над mock результата session.execute()."""
+    """Создает фейковый результат запроса."""
     result = MagicMock()
     result.scalar_one_or_none = MagicMock(return_value=scalar_value)
     return result
 
 
 class TestLoginAttemptRepository:
-    """Тестируем репозиторий на уровне поведения, без реальной БД."""
+    """Тесты для LoginAttemptRepository."""
 
     async def test_get_by_bucket_returns_none(self, mock_session):
+        """Проверяет ожидаемый результат."""
         mock_session.execute.return_value = _fake_result(None)
         repo = LoginAttemptRepository(mock_session)
         result = await repo.get_by_bucket("127.0.0.1:test@test.com")
         assert result is None
 
-    async def test_get_by_bucket_returns_attempt(self, mock_session, make_login_attempt):
+    async def test_get_by_bucket_returns_attempt(
+            self, mock_session, make_login_attempt):
+        """Проверяет ожидаемый результат."""
         attempt = make_login_attempt()
         mock_session.execute.return_value = _fake_result(attempt)
         repo = LoginAttemptRepository(mock_session)
@@ -38,7 +41,7 @@ class TestLoginAttemptRepository:
         assert result is attempt
 
     async def test_record_failure_first_attempt(self, mock_session):
-        """Первая попытка — создаём новую запись с failed_attempts=1."""
+        """Проверяет рабочий сценарий."""
         mock_session.execute.return_value = _fake_result(None)
         repo = LoginAttemptRepository(mock_session)
         now = datetime.now(timezone.utc)
@@ -55,8 +58,9 @@ class TestLoginAttemptRepository:
         assert result.blocked_until is None
         mock_session.add.assert_called_once()
 
-    async def test_record_failure_blocks_after_max_attempts(self, mock_session, make_login_attempt):
-        """После 5 попыток в пределах окна — blocked_until установлен."""
+    async def test_record_failure_blocks_after_max_attempts(
+            self, mock_session, make_login_attempt):
+        """Проверяет рабочий сценарий."""
         now = datetime.now(timezone.utc)
         attempt = make_login_attempt(
             failed_attempts=4,
@@ -76,12 +80,14 @@ class TestLoginAttemptRepository:
         assert result.failed_attempts == 5
         assert result.blocked_until == now + timedelta(seconds=900)
 
-    async def test_record_failure_window_resets(self, mock_session, make_login_attempt):
-        """Если окно истекло — счётчик сбрасывается до 1."""
+    async def test_record_failure_window_resets(
+            self, mock_session, make_login_attempt):
+        """Проверяет рабочий сценарий."""
         now = datetime.now(timezone.utc)
         old_attempt = make_login_attempt(
             failed_attempts=4,
-            window_started_at=now - timedelta(seconds=600),  # окно 300с истекло
+            window_started_at=now -
+            timedelta(seconds=600),  # окно 300с истекло
         )
         mock_session.execute.return_value = _fake_result(old_attempt)
         repo = LoginAttemptRepository(mock_session)
@@ -98,8 +104,9 @@ class TestLoginAttemptRepository:
         assert result.failed_attempts == 1
         assert result.blocked_until is None
 
-    async def test_clear_deletes_attempt(self, mock_session, make_login_attempt):
-        """clear() удаляет запись из БД."""
+    async def test_clear_deletes_attempt(
+            self, mock_session, make_login_attempt):
+        """Проверяет удаление данных."""
         attempt = make_login_attempt()
         mock_session.execute.return_value = _fake_result(attempt)
         repo = LoginAttemptRepository(mock_session)
@@ -110,7 +117,7 @@ class TestLoginAttemptRepository:
         mock_session.flush.assert_awaited_once()
 
     async def test_clear_noop_when_bucket_not_found(self, mock_session):
-        """clear() не падает если записи нет."""
+        """Проверяет рабочий сценарий."""
         mock_session.execute.return_value = _fake_result(None)
         repo = LoginAttemptRepository(mock_session)
 

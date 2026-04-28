@@ -6,7 +6,9 @@ from src.services.templates import build_booking_confirmation_html
 
 
 class TestBuildBookingConfirmationHtml:
+    """Тесты HTML-шаблона бронирования."""
     def test_template_contains_booking_details(self):
+        """Проверяет содержимое результата."""
         html = build_booking_confirmation_html(
             booking_id=17,
             event_title="Rock Festival",

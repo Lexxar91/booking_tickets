@@ -9,7 +9,9 @@ from src.schemas.auth import TokenPayload
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
-async def get_current_token_payload(token: str = Depends(oauth2_scheme)) -> TokenPayload:
+async def get_current_token_payload(
+        token: str = Depends(oauth2_scheme)) -> TokenPayload:
+    """Возвращает payload access-токена."""
     try:
         payload = decode_token(token)
     except JWTError:
@@ -29,7 +31,9 @@ async def get_current_token_payload(token: str = Depends(oauth2_scheme)) -> Toke
     return payload
 
 
-async def require_admin(payload: TokenPayload = Depends(get_current_token_payload)) -> int:
+async def require_admin(payload: TokenPayload = Depends(
+        get_current_token_payload)) -> int:
+    """Проверяет роль администратора."""
     if payload.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

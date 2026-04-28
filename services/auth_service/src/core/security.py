@@ -12,16 +12,17 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def hash_password(plain_password: str) -> str:
-    """Хэшируем пароль перед сохранением в БД."""
+    """Выполняет hash password."""
     return pwd_context.hash(plain_password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Проверяем пароль при логине."""
+    """Выполняет verify password."""
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def _create_token(payload: dict, expires_delta: timedelta) -> str:
+    """Создает JWT-токен с общими полями."""
     expire = datetime.now(timezone.utc) + expires_delta
     token_payload = {
         **payload,
@@ -37,15 +38,19 @@ def _create_token(payload: dict, expires_delta: timedelta) -> str:
 
 
 def create_access_token(user_id: int, role: str) -> str:
+    """Создает access-токен."""
     payload = {
         "sub": str(user_id),
         "role": role,
         "type": "access",
     }
-    return _create_token(payload, timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
+    return _create_token(
+        payload, timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES))
 
 
 def create_refresh_token(user_id: int, role: str) -> tuple[str, str, datetime]:
+    """Создает refresh-токен."""
     jti = str(uuid4())
     expires_delta = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     expires_at = datetime.now(timezone.utc) + expires_delta
@@ -59,6 +64,7 @@ def create_refresh_token(user_id: int, role: str) -> tuple[str, str, datetime]:
 
 
 def decode_token(token: str) -> TokenPayload:
+    """Декодирует JWT-токен."""
     payload = jwt.decode(
         token,
         settings.jwt_public_key,

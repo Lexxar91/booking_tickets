@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum as PyEnum
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, func
+from sqlalchemy import DateTime, Integer, Numeric, func
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,19 +10,14 @@ from src.core.database import Base
 
 
 class BookingStatus(PyEnum):
-    """
-    Статусы бронирования.
-    
-    PENDING    — бронирование создано, ожидает оплаты (в нашем случае сразу CONFIRMED)
-    CONFIRMED  — оплачено и подтверждено
-    CANCELLED  — отменено пользователем
-    """
+    """Описывает класс BookingStatus."""
     PENDING = "pending"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"
 
 
 class Booking(Base):
+    """Описывает модель бронирования."""
     __table_args__ = {"schema": "booking"}
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -56,30 +51,30 @@ class Booking(Base):
 
     @property
     def status_str(self) -> str:
+        """Возвращает статус в виде строки."""
         return self.status.value
 
     def __repr__(self) -> str:
-        return f"<Booking id={self.id} user_id={self.user_id} event_id={self.event_id} status={self.status}>"
-    
+        """Возвращает строковое представление объекта."""
+        return (
+            f"<Booking id={self.id} "
+            f"user_id={self.user_id} "
+            f"event_id={self.event_id} "
+            f"status={self.status}>"
+        )
 
 
 class EventTickets(Base):
-    """
-    Локальная копия счётчика билетов из Event Service.
-
-    Почему она нужна? Мы не можем делать SELECT FOR UPDATE
-    на таблицу в другой БД (event_db). Поэтому храним счётчик
-    билетов локально в booking_db — только то что нужно для
-    атомарного уменьшения при покупке.
-
-    Это паттерн называется 'local cache of critical data'.
-    Счётчик синхронизируется с Event Service при первой покупке.
-    """
-    __tablename__ = "event_tickets" 
+    """Описывает локальный счетчик билетов."""
+    __tablename__ = "event_tickets"
     __table_args__ = {"schema": "booking"}
 
     event_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     available_tickets: Mapped[int] = mapped_column(Integer, nullable=False)
 
     def __repr__(self) -> str:
-        return f"<EventTickets event_id={self.event_id} available={self.available_tickets}>"
+        """Возвращает строковое представление объекта."""
+        return (
+            f"<EventTickets event_id={self.event_id} "
+            f"available={self.available_tickets}>"
+        )

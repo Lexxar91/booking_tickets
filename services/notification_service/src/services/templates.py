@@ -3,15 +3,17 @@ def build_booking_confirmation_html(
     event_title: str,
     price: str,
 ) -> str:
-    """
-    Возвращает HTML тело письма подтверждения бронирования.
-    Единственная ответственность: формирование HTML шаблонов.
-    Если понадобится другой дизайн — меняем только этот файл.
-    """
+    """Собирает HTML письма о бронировании."""
     return f"""
     <html>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #1a1a2e; color: white; padding: 20px; text-align: center;">
+    <body
+        style="font-family: Arial, sans-serif;
+               max-width: 600px; margin: 0 auto;"
+    >
+        <div
+            style="background: #1a1a2e; color: white; padding: 20px;
+                   text-align: center;"
+        >
             <h1>BookingTickets</h1>
         </div>
         <div style="padding: 20px;">

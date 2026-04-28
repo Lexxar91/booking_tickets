@@ -23,15 +23,15 @@ pdf_generated_total = Counter(
 
 
 def track_email_sent(status: str) -> None:
-    """Увеличивает счётчик отправки email с нужным статусом."""
+    """Выполняет track email sent."""
     emails_sent_total.labels(status=status).inc()
 
 
 def track_email_retry() -> None:
-    """Увеличивает счётчик повторных SMTP-попыток."""
+    """Выполняет track email retry."""
     emails_retry_total.inc()
 
 
 def track_pdf_generated(status: str) -> None:
-    """Увеличивает счётчик генерации PDF с нужным статусом."""
+    """Выполняет track pdf generated."""
     pdf_generated_total.labels(status=status).inc()

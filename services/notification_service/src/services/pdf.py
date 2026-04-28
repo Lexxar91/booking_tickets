@@ -3,8 +3,14 @@ import io
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import cm
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.platypus import (
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
 from reportlab.lib.enums import TA_CENTER
 
 
@@ -14,20 +20,17 @@ def generate_ticket_pdf(
     price: str,
     user_email: str,
 ) -> bytes:
-    """
-    Генерирует PDF билет и возвращает его как bytes.
-    Использует io.BytesIO — файл в памяти, не на диске.
-    """
-    
+    """Генерирует PDF-билет."""
+
     buffer = io.BytesIO()
 
     doc = SimpleDocTemplate(
         buffer,
         pagesize=A4,
-        rightMargin=2*cm,
-        leftMargin=2*cm,
-        topMargin=2*cm,
-        bottomMargin=2*cm,
+        rightMargin=2 * cm,
+        leftMargin=2 * cm,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
     )
 
     styles = getSampleStyleSheet()
@@ -68,7 +71,7 @@ def generate_ticket_pdf(
 
     elements.append(Paragraph("EventHive", title_style))
     elements.append(Paragraph("Электронный билет", header_style))
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.5 * cm))
 
     data = [
         ["Параметр", "Значение"],
@@ -79,7 +82,7 @@ def generate_ticket_pdf(
         ["Статус", "ПОДТВЕРЖДЕНО"],
     ]
 
-    table = Table(data, colWidths=[6*cm, 11*cm])
+    table = Table(data, colWidths=[6 * cm, 11 * cm])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a1a2e")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
@@ -99,7 +102,7 @@ def generate_ticket_pdf(
     ]))
 
     elements.append(table)
-    elements.append(Spacer(1, 1*cm))
+    elements.append(Spacer(1, 1 * cm))
     elements.append(Paragraph(
         "Покажите этот билет на входе. Спасибо за покупку!",
         normal_style,

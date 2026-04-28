@@ -3,14 +3,14 @@ from logging.config import fileConfig
 
 from sqlalchemy import pool, text
 from sqlalchemy.engine import Connection
-from sqlalchemy.ext.asyncio import async_engine_from_config, create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
 
 from src.core.database import Base
 from src.core.config import settings
 
-from src.models.event import Event
+from src.models.event import Event  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -27,7 +27,9 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
+
 def get_url():
+    """Возвращает URL базы данных."""
     return settings.database_url
 
 # other values from the config, defined by the needs of env.py,
@@ -37,18 +39,8 @@ def get_url():
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode.
-
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
-
-    Calls to context.execute() here emit the given string to the
-    script output.
-
-    """
-    #url = config.get_main_option("sqlalchemy.url")
+    """Запускает миграции в offline-режиме."""
+    # url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=get_url(),
         target_metadata=target_metadata,
@@ -63,8 +55,9 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
+    """Выполняет миграции на подключении."""
     context.configure(
-        connection=connection, 
+        connection=connection,
         target_metadata=target_metadata,
         version_table_schema="events",
         include_schemas=True
@@ -75,10 +68,10 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    """Запуск миграций в async-режиме"""
+    """Запускает асинхронные миграции."""
 
     connectable = create_async_engine(
-        settings.database_url,   
+        settings.database_url,
         poolclass=pool.NullPool,
     )
 
@@ -89,8 +82,9 @@ async def run_async_migrations() -> None:
 
     await connectable.dispose()
 
+
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
+    """Запускает миграции в online-режиме."""
 
     asyncio.run(run_async_migrations())
 

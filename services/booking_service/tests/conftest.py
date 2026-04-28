@@ -7,6 +7,8 @@
 - изолировать unit-тесты от локальной БД и внешней инфраструктуры
 """
 
+from src.schemas.booking import BookingCreate
+from src.models.booking import Booking, BookingStatus, EventTickets
 import os
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -26,14 +28,11 @@ os.environ["DEBUG"] = "false"
 os.environ["SQL_ECHO"] = "false"
 
 
-from src.models.booking import Booking, BookingStatus, EventTickets
-from src.schemas.booking import BookingCreate
-
-
 @pytest.fixture(scope="session")
 def rsa_keys():
-    """Генерируем RSA-пару один раз на сессию тестов."""
-    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    """Выполняет rsa keys."""
+    private_key = rsa.generate_private_key(
+        public_exponent=65537, key_size=2048)
     private_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
@@ -48,12 +47,7 @@ def rsa_keys():
 
 @pytest.fixture(autouse=True)
 def patch_settings(monkeypatch, rsa_keys):
-    """
-    Подменяем settings на уровень конкретного теста.
-
-    Такой подход держит unit-тесты изолированными и не тащит в них
-    локальные переменные окружения или compose/k8s-конфигурацию.
-    """
+    """Выполняет patch settings."""
     import src.core.config
     import src.core.dependencies
     import src.core.http_client
@@ -71,7 +65,8 @@ def patch_settings(monkeypatch, rsa_keys):
     )
 
     monkeypatch.setattr(src.core.config, "settings", fake_settings)
-    monkeypatch.setattr(src.core.dependencies, "decode_token", src.core.security.decode_token)
+    monkeypatch.setattr(src.core.dependencies, "decode_token",
+                        src.core.security.decode_token)
     monkeypatch.setattr(src.core.http_client, "settings", fake_settings)
     monkeypatch.setattr(src.core.security, "settings", fake_settings)
 
@@ -80,7 +75,7 @@ def patch_settings(monkeypatch, rsa_keys):
 
 @pytest.fixture()
 def mock_session():
-    """Минимальный AsyncSession double для unit-тестов."""
+    """Выполняет mock session."""
     session = AsyncMock()
     session.execute = AsyncMock()
     session.flush = AsyncMock()
@@ -92,7 +87,7 @@ def mock_session():
 
 @pytest.fixture()
 def make_booking():
-    """Фабрика реальных объектов Booking."""
+    """Выполняет make booking."""
 
     def _make(
         booking_id: int = 1,
@@ -101,6 +96,7 @@ def make_booking():
         status: BookingStatus = BookingStatus.CONFIRMED,
         price_at_booking: Decimal = Decimal("1000.00"),
     ) -> Booking:
+        """Создает тестовый объект с переопределениями."""
         booking = Booking(
             user_id=user_id,
             event_id=event_id,
@@ -117,23 +113,26 @@ def make_booking():
 
 @pytest.fixture()
 def make_event_tickets():
-    """Фабрика реальных объектов EventTickets."""
+    """Выполняет make event tickets."""
 
     def _make(event_id: int = 1, available_tickets: int = 10) -> EventTickets:
-        return EventTickets(event_id=event_id, available_tickets=available_tickets)
+        """Создает тестовый объект с переопределениями."""
+        return EventTickets(
+            event_id=event_id,
+            available_tickets=available_tickets)
 
     return _make
 
 
 @pytest.fixture()
 def booking_create_data() -> BookingCreate:
-    """Готовые входные данные для создания бронирования."""
+    """Выполняет booking create data."""
     return BookingCreate(event_id=1, user_email="user@example.com")
 
 
 @pytest.fixture()
 def make_access_token(rsa_keys):
-    """Фабрика валидных access JWT для dependency-тестов."""
+    """Выполняет make access token."""
 
     def _make(
         sub: str = "1",
@@ -141,6 +140,7 @@ def make_access_token(rsa_keys):
         token_type: str = "access",
         iss: str = "booking-auth-service",
     ) -> str:
+        """Создает тестовый объект с переопределениями."""
         private_pem, _ = rsa_keys
         payload = {
             "sub": sub,

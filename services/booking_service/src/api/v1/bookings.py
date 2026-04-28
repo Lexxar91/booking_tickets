@@ -13,15 +13,12 @@ from src.services.booking_service import BookingService
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
 
-def get_booking_service(session: AsyncSession = Depends(get_async_session)) -> BookingService:
-    """
-    Фабрика сервиса.
-    Сессия передаётся и в репозиторий и в сервис напрямую —
-    потому что сервис использует сессию для SELECT FOR UPDATE.
-    """
+def get_booking_service(
+    session: AsyncSession = Depends(get_async_session),
+) -> BookingService:
+    """Собирает сервис бронирования."""
     repository = BookingRepository(session)
     return BookingService(repository, session)
-
 
 
 @router.post(
@@ -36,12 +33,11 @@ async def booking_create(
     session: AsyncSession = Depends(get_async_session),
     service: BookingService = Depends(get_booking_service)
 ):
-    """
-    Создаёт бронирование для текущего пользователя.
-    Использует SELECT FOR UPDATE для защиты от Race Condition.
-    Требует JWT токен в заголовке Authorization: Bearer <token>.
-    """
-    new_booking = await service.create(booking_data=booking_in, user_id=current_user_id )
+    """Создает бронирование через API."""
+    new_booking = await service.create(
+        booking_data=booking_in,
+        user_id=current_user_id,
+    )
     await session.commit()
     return new_booking
 
@@ -55,7 +51,7 @@ async def get_my_bookings(
     service: BookingService = Depends(get_booking_service),
     current_user_id: int = Depends(get_current_user_id),
 ):
-    """Возвращает все бронирования текущего пользователя."""
+    """Возвращает бронирования текущего пользователя."""
     return await service.get_my_bookings(user_id=current_user_id)
 
 
@@ -69,11 +65,11 @@ async def get_booking(
     service: BookingService = Depends(get_booking_service),
     current_user_id: int = Depends(get_current_user_id)
 ):
-    """
-    Возвращает бронирование по ID.
-    Возвращает 403 если бронирование принадлежит другому пользователю.
-    """
-    return await service.get_booking(booking_id=booking_id, user_id=current_user_id)
+    """Возвращает бронирование по id."""
+    return await service.get_booking(
+        booking_id=booking_id,
+        user_id=current_user_id,
+    )
 
 
 @router.post(
@@ -87,11 +83,7 @@ async def cancel_booking(
     service: BookingService = Depends(get_booking_service),
     current_user_id: int = Depends(get_current_user_id),
 ):
-    """
-    Отменяет бронирование и возвращает билет в пул.
-    Возвращает 403 если бронирование принадлежит другому пользователю.
-    Возвращает 409 если бронирование уже отменено.
-    """
+    """Отменяет бронирование через API."""
     cancelled = await service.cancel_booking(booking_id, current_user_id)
     await session.commit()
     return cancelled

@@ -35,30 +35,30 @@ auth_active_sessions = Gauge(
 
 
 def track_login_attempt(status: str) -> None:
-    """Увеличивает счётчик попыток логина с нужным статусом."""
+    """Выполняет track login attempt."""
     auth_login_attempts_total.labels(status=status).inc()
 
 
 def track_registration(status: str) -> None:
-    """Увеличивает счётчик регистраций с нужным статусом."""
+    """Выполняет track registration."""
     auth_registrations_total.labels(status=status).inc()
 
 
 def track_token_refresh(status: str) -> None:
-    """Увеличивает счётчик refresh-операций с нужным статусом."""
+    """Выполняет track token refresh."""
     auth_token_refreshes_total.labels(status=status).inc()
 
 
 def track_logout(status: str) -> None:
-    """Увеличивает счётчик logout-операций с нужным статусом."""
+    """Выполняет track logout."""
     auth_logouts_total.labels(status=status).inc()
 
 
 def increment_active_sessions() -> None:
-    """Увеличивает gauge активных сессий после успешного логина."""
+    """Выполняет increment active sessions."""
     auth_active_sessions.inc()
 
 
 def decrement_active_sessions() -> None:
-    """Уменьшает gauge активных сессий после успешного logout."""
+    """Выполняет decrement active sessions."""
     auth_active_sessions.dec()

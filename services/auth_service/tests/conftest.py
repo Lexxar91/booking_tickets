@@ -7,6 +7,10 @@
 - использовать реальные RSA-ключи и реальные модели там, где это полезно
 """
 
+from src.models.user import User
+from src.models.refresh_token import RefreshToken
+from src.models.login_attempt import LoginAttempt
+from src.core.security import hash_password
 import os
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
@@ -25,41 +29,29 @@ os.environ["DEBUG"] = "false"
 os.environ["SQL_ECHO"] = "false"
 
 
-from src.core.security import hash_password
-from src.models.login_attempt import LoginAttempt
-from src.models.refresh_token import RefreshToken
-from src.models.user import User
-
-
 @pytest.fixture(scope="session")
 def rsa_keys():
-    """Генерируем реальную пару RSA-ключей один раз на сессию тестов."""
-    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    
+    """Выполняет rsa keys."""
+    private_key = rsa.generate_private_key(
+        public_exponent=65537, key_size=2048)
+
     private_pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     ).decode("utf-8")
-    
+
     public_pem = private_key.public_key().public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo,
     ).decode("utf-8")
-    
+
     return private_pem, public_pem
 
 
 @pytest.fixture(autouse=True)
 def patch_settings(monkeypatch, rsa_keys):
-    """
-    Подменяем settings на уровень конкретного теста.
-
-    Такой подход лучше глобального reload:
-    - тесты изолированы друг от друга
-    - меньше скрытого глобального состояния
-    - проще понять, какие настройки реально используются
-    """
+    """Выполняет patch settings."""
     import src.core.config
     import src.core.security
     import src.services.auth_service
@@ -86,7 +78,7 @@ def patch_settings(monkeypatch, rsa_keys):
 
 @pytest.fixture()
 def mock_session():
-    """Минимальный AsyncSession double для repository-тестов."""
+    """Выполняет mock session."""
     session = AsyncMock()
     session.execute = AsyncMock()
     session.flush = AsyncMock()
@@ -98,7 +90,7 @@ def mock_session():
 
 @pytest.fixture()
 def make_user():
-    """Фабрика реальных объектов User для тестов."""
+    """Выполняет make user."""
     cached_hash = None
 
     def _make(
@@ -109,6 +101,7 @@ def make_user():
         role: str = "user",
         is_active: bool = True,
     ) -> User:
+        """Создает тестовый объект с переопределениями."""
         nonlocal cached_hash
 
         if hashed_password is None:
@@ -135,7 +128,7 @@ def make_user():
 
 @pytest.fixture()
 def make_login_attempt():
-    """Фабрика реальных объектов LoginAttempt для тестов."""
+    """Выполняет make login attempt."""
 
     def _make(
         bucket: str = "127.0.0.1:test@example.com",
@@ -144,6 +137,7 @@ def make_login_attempt():
         blocked_until: datetime | None = None,
         last_attempt_at: datetime | None = None,
     ) -> LoginAttempt:
+        """Создает тестовый объект с переопределениями."""
         now = datetime.now(timezone.utc)
         return LoginAttempt(
             bucket=bucket,
@@ -158,7 +152,7 @@ def make_login_attempt():
 
 @pytest.fixture()
 def make_refresh_token():
-    """Фабрика реальных объектов RefreshToken для тестов."""
+    """Выполняет make refresh token."""
 
     def _make(
         user_id: int = 1,
@@ -166,10 +160,12 @@ def make_refresh_token():
         expires_at: datetime | None = None,
         revoked_at: datetime | None = None,
     ) -> RefreshToken:
+        """Создает тестовый объект с переопределениями."""
         token = RefreshToken(
             user_id=user_id,
             jti=jti or str(uuid4()),
-            expires_at=expires_at or (datetime.now(timezone.utc) + timedelta(days=30)),
+            expires_at=expires_at or (datetime.now(
+                timezone.utc) + timedelta(days=30)),
             revoked_at=revoked_at,
         )
         token.id = 1
@@ -180,7 +176,7 @@ def make_refresh_token():
 
 @pytest.fixture()
 def valid_refresh_token(rsa_keys, make_refresh_token):
-    """Возвращает `(token_string, jti, user_id)` для валидного refresh-токена."""
+    """Выполняет valid refresh token."""
     from jose import jwt
 
     private_pem, _ = rsa_keys
@@ -201,7 +197,7 @@ def valid_refresh_token(rsa_keys, make_refresh_token):
 
 @pytest.fixture()
 def valid_access_token(rsa_keys):
-    """Возвращает валидный access-токен, подписанный тестовым приватным ключом."""
+    """Выполняет valid access token."""
     from jose import jwt
 
     private_pem, _ = rsa_keys

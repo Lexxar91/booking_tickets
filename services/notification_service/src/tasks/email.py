@@ -25,14 +25,7 @@ def send_booking_confirmation(
     event_title: str,
     price: str,
 ) -> None:
-    """
-    Celery задача — оркестратор отправки билета.
-    Единственная ответственность: координация вызовов сервисов.
-
-    Намеренно не содержит деталей реализации PDF или SMTP —
-    только вызывает нужные сервисы в правильном порядке.
-    При ошибке SMTP — retry через 30 секунд (максимум 3 раза).
-    """
+    """Отправляет подтверждение бронирования."""
     try:
         pdf_bytes = generate_ticket_pdf(
             booking_id=booking_id,
@@ -58,7 +51,10 @@ def send_booking_confirmation(
 
         track_email_sent(status="success")
 
-        print(f"✅ Email с PDF билетом отправлен на {user_email} для бронирования #{booking_id}")
+        print(
+            "✅ Email с PDF билетом отправлен на "
+            f"{user_email} для бронирования #{booking_id}"
+        )
 
     except smtplib.SMTPException as e:
         track_email_sent(status="failed")

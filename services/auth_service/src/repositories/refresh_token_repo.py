@@ -7,17 +7,29 @@ from src.models.refresh_token import RefreshToken
 
 
 class RefreshTokenRepository:
+    """Работает с refresh-токенами в базе данных."""
     def __init__(self, session: AsyncSession):
+        """Сохраняет сессию репозитория."""
         self.session = session
 
-    async def create_token(self, user_id: int, jti: str, expires_at: datetime) -> RefreshToken:
+    async def create_token(
+            self,
+            user_id: int,
+            jti: str,
+            expires_at: datetime) -> RefreshToken:
+        """Сохраняет refresh-токен."""
         token = RefreshToken(user_id=user_id, jti=jti, expires_at=expires_at)
         self.session.add(token)
         await self.session.flush()
         await self.session.refresh(token)
         return token
 
-    async def get_active_token(self, user_id: int, jti: str, now: datetime) -> RefreshToken | None:
+    async def get_active_token(
+            self,
+            user_id: int,
+            jti: str,
+            now: datetime) -> RefreshToken | None:
+        """Ищет активный refresh-токен."""
         stmt = select(RefreshToken).where(
             RefreshToken.user_id == user_id,
             RefreshToken.jti == jti,
@@ -28,5 +40,6 @@ class RefreshTokenRepository:
         return result.scalar_one_or_none()
 
     async def revoke(self, token: RefreshToken, revoked_at: datetime) -> None:
+        """Помечает refresh-токен отозванным."""
         token.revoked_at = revoked_at
         await self.session.flush()

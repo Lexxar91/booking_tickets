@@ -36,25 +36,26 @@ tickets_available_per_event = Gauge(
 
 
 def track_booking_created(status: str) -> None:
-    """Увеличивает счётчик созданных бронирований с нужным статусом."""
+    """Выполняет track booking created."""
     bookings_created_total.labels(status=status).inc()
 
 
 def track_booking_cancelled(status: str) -> None:
-    """Увеличивает счётчик отмен бронирований с нужным статусом."""
+    """Выполняет track booking cancelled."""
     bookings_cancelled_total.labels(status=status).inc()
 
 
 def track_booking_retrieved() -> None:
-    """Увеличивает счётчик запросов на чтение бронирований."""
+    """Выполняет track booking retrieved."""
     bookings_retrieved_total.inc()
 
 
 def increment_tickets_sold(event_id: int) -> None:
-    """Увеличивает счётчик проданных билетов для мероприятия."""
+    """Выполняет increment tickets sold."""
     tickets_sold_per_event.labels(event_id=str(event_id)).inc()
 
 
 def set_tickets_available(event_id: int, available_tickets: int) -> None:
-    """Обновляет gauge доступных билетов для мероприятия."""
-    tickets_available_per_event.labels(event_id=str(event_id)).set(available_tickets)
+    """Выполняет set tickets available."""
+    tickets_available_per_event.labels(
+        event_id=str(event_id)).set(available_tickets)

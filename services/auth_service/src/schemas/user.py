@@ -3,19 +3,19 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserRegister(BaseModel):
-    """Схема для регистрации. Принимаем пароль открытым текстом — схема его не хранит."""
+    """Описывает класс UserRegister."""
     email: EmailStr
     password: str = Field(..., min_length=8, description="Минимум 8 символов")
 
 
 class UserRead(BaseModel):
-    """Схема ответа — никогда не возвращаем hashed_password клиенту."""
+    """Описывает класс UserRead."""
     id: int
     email: EmailStr
     role: str
     is_active: bool
     created_at: datetime
- 
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -25,30 +25,27 @@ class UserRead(BaseModel):
 
 
 class TokenPair(BaseModel):
-    """Пара токенов которую возвращаем после успешного логина."""
+    """Описывает класс TokenPair."""
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
 
 
 class TokenPayload(BaseModel):
-    """
-    Payload внутри JWT токена.
-    """
-    sub: str          
+    """Описывает payload JWT-токена."""
+    sub: str
     role: str
-    type: str         
+    type: str
     exp: datetime
     iss: str
     jti: str | None = None
 
 
 class RefreshTokenRequest(BaseModel):
-    """Запрос на обновление токенов."""
+    """Описывает класс RefreshTokenRequest."""
     refresh_token: str
 
 
 class LogoutRequest(BaseModel):
-    """Запрос на отзыв refresh токена."""
+    """Описывает класс LogoutRequest."""
     refresh_token: str
- 

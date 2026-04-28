@@ -19,7 +19,10 @@ from src.services.auth_service import AuthService
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
-def get_auth_service(session: AsyncSession = Depends(get_async_session)) -> AuthService:
+def get_auth_service(
+    session: AsyncSession = Depends(get_async_session),
+) -> AuthService:
+    """Собирает сервис авторизации."""
     return AuthService(
         repository=UserRepository(session),
         refresh_token_repository=RefreshTokenRepository(session),
@@ -28,6 +31,7 @@ def get_auth_service(session: AsyncSession = Depends(get_async_session)) -> Auth
 
 
 def _get_client_ip(request: Request) -> str:
+    """Извлекает IP клиента из запроса."""
     forwarded_for = request.headers.get("x-forwarded-for")
     if forwarded_for:
         return forwarded_for.split(",")[0].strip()
@@ -45,6 +49,7 @@ async def register(
     session: AsyncSession = Depends(get_async_session),
     service: AuthService = Depends(get_auth_service),
 ):
+    """Обрабатывает регистрацию пользователя."""
     user = await service.register(user_in)
     await session.commit()
     return user
@@ -61,6 +66,7 @@ async def login(
     session: AsyncSession = Depends(get_async_session),
     service: AuthService = Depends(get_auth_service),
 ):
+    """Обрабатывает вход пользователя."""
     try:
         token_pair = await service.login(
             email=form_data.username,
@@ -84,6 +90,7 @@ async def refresh(
     session: AsyncSession = Depends(get_async_session),
     service: AuthService = Depends(get_auth_service),
 ):
+    """Обрабатывает обновление токенов."""
     token_pair = await service.refresh(token_request.refresh_token)
     await session.commit()
     return token_pair
@@ -99,5 +106,6 @@ async def logout(
     session: AsyncSession = Depends(get_async_session),
     service: AuthService = Depends(get_auth_service),
 ):
+    """Обрабатывает выход пользователя."""
     await service.logout(token_request.refresh_token)
     await session.commit()

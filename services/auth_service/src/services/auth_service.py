@@ -26,26 +26,33 @@ from src.schemas.user import TokenPair, UserRegister
 
 
 class AuthService:
+    """Содержит бизнес-логику авторизации."""
     def __init__(
         self,
         repository: UserRepository,
         refresh_token_repository: RefreshTokenRepository,
         login_attempt_repository: LoginAttemptRepository,
     ):
+        """Сохраняет зависимости сервиса."""
         self.repository = repository
         self.refresh_token_repository = refresh_token_repository
         self.login_attempt_repository = login_attempt_repository
 
     @staticmethod
     def _now() -> datetime:
+        """Возвращает текущее время в UTC."""
         return datetime.now(timezone.utc)
 
     @staticmethod
     def _login_bucket(email: str, client_ip: str) -> str:
+        """Собирает ключ для ограничения попыток входа."""
         return f"{client_ip}:{email.strip().lower()}"
 
     async def register(self, user_data: UserRegister) -> User:
-        check_email_in_db = await self.repository.get_user_by_email(user_data.email)
+        """Регистрирует нового пользователя."""
+        check_email_in_db = await self.repository.get_user_by_email(
+            user_data.email
+        )
         if check_email_in_db:
             track_registration(status="duplicate")
             raise HTTPException(
@@ -55,14 +62,21 @@ class AuthService:
         track_registration(status="success")
         return await self.repository.create_user(user_data)
 
-    async def login(self, email: str, password: str, client_ip: str) -> TokenPair:
+    async def login(
+        self,
+        email: str,
+        password: str,
+        client_ip: str,
+    ) -> TokenPair:
+        """Выполняет вход пользователя."""
         now = self._now()
         bucket = self._login_bucket(email=email, client_ip=client_ip)
         attempt = await self.login_attempt_repository.get_by_bucket(bucket)
 
         if attempt and attempt.blocked_until and attempt.blocked_until > now:
             track_login_attempt(status="rate_limited")
-            retry_after = max(1, int((attempt.blocked_until - now).total_seconds()))
+            retry_after = max(
+                1, int((attempt.blocked_until - now).total_seconds()))
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Слишком много попыток входа. Попробуйте позже.",
@@ -72,15 +86,23 @@ class AuthService:
         user = await self.repository.get_user_by_email(email)
         if not user or not verify_password(password, user.hashed_password):
             track_login_attempt(status="failure")
-            failed_attempt = await self.login_attempt_repository.record_failure(
-                bucket=bucket,
-                now=now,
-                window_seconds=settings.LOGIN_RATE_LIMIT_WINDOW_SECONDS,
-                max_attempts=settings.LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
-                block_seconds=settings.LOGIN_RATE_LIMIT_BLOCK_SECONDS,
+            failed_attempt = (
+                await self.login_attempt_repository.record_failure(
+                    bucket=bucket,
+                    now=now,
+                    window_seconds=settings.LOGIN_RATE_LIMIT_WINDOW_SECONDS,
+                    max_attempts=settings.LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
+                    block_seconds=settings.LOGIN_RATE_LIMIT_BLOCK_SECONDS,
+                )
             )
-            if failed_attempt.blocked_until and failed_attempt.blocked_until > now:
-                retry_after = max(1, int((failed_attempt.blocked_until - now).total_seconds()))
+            if (
+                failed_attempt.blocked_until
+                and failed_attempt.blocked_until > now
+            ):
+                retry_after = max(
+                    1,
+                    int((failed_attempt.blocked_until - now).total_seconds()),
+                )
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Слишком много попыток входа. Попробуйте позже.",
@@ -100,7 +122,10 @@ class AuthService:
             )
 
         await self.login_attempt_repository.clear(bucket)
-        refresh_token, jti, expires_at = create_refresh_token(user.id, user.role)
+        refresh_token, jti, expires_at = create_refresh_token(
+            user.id,
+            user.role,
+        )
         await self.refresh_token_repository.create_token(
             user_id=user.id,
             jti=jti,
@@ -116,6 +141,7 @@ class AuthService:
         )
 
     async def refresh(self, refresh_token: str) -> TokenPair:
+        """Обновляет пару токенов."""
         try:
             payload = decode_token(refresh_token)
         except JWTError:
@@ -153,8 +179,14 @@ class AuthService:
                 detail="Пользователь не найден или заблокирован",
             )
 
-        await self.refresh_token_repository.revoke(stored_token, revoked_at=now)
-        new_refresh_token, new_jti, expires_at = create_refresh_token(user.id, user.role)
+        await self.refresh_token_repository.revoke(
+            stored_token,
+            revoked_at=now,
+        )
+        new_refresh_token, new_jti, expires_at = create_refresh_token(
+            user.id,
+            user.role,
+        )
         await self.refresh_token_repository.create_token(
             user_id=user.id,
             jti=new_jti,
@@ -169,6 +201,7 @@ class AuthService:
         )
 
     async def logout(self, refresh_token: str) -> None:
+        """Отзывает refresh-токен."""
         try:
             payload = decode_token(refresh_token)
         except JWTError:
@@ -197,6 +230,9 @@ class AuthService:
                 detail="Refresh токен уже отозван или истёк",
             )
 
-        await self.refresh_token_repository.revoke(token, revoked_at=self._now())
+        await self.refresh_token_repository.revoke(
+            token,
+            revoked_at=self._now(),
+        )
         track_logout(status="success")
         decrement_active_sessions()

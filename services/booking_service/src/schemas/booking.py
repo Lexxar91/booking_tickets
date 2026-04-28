@@ -6,13 +6,13 @@ from src.models.booking import BookingStatus
 
 
 class BookingCreate(BaseModel):
-    """Схема для создания бронирования — клиент передаёт только event_id."""
+    """Описывает класс BookingCreate."""
     event_id: int = Field(..., gt=0)
     user_email: str = Field(..., description="Email для отправки билета")
 
 
 class BookingRead(BaseModel):
-    """Схема ответа клиенту."""
+    """Описывает класс BookingRead."""
     id: int
     user_id: int
     event_id: int
@@ -25,17 +25,15 @@ class BookingRead(BaseModel):
 
     @field_serializer('status', return_type=str)
     def serialize_status(self, value: BookingStatus) -> str:
+        """Преобразует статус в строку."""
         return value.value
 
 
-
 class TokenPayload(BaseModel):
-    """
-    Payload внутри JWT токена.
-    """
-    sub: str       
+    """Описывает payload JWT-токена."""
+    sub: str
     role: str
-    type: str      
+    type: str
     exp: datetime
     iss: str
     jti: str | None = None

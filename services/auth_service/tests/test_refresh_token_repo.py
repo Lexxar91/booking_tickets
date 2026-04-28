@@ -14,17 +14,24 @@ from src.repositories.refresh_token_repo import RefreshTokenRepository
 
 
 def _fake_result(value):
+    """Создает фейковый результат запроса."""
     result = MagicMock()
     result.scalar_one_or_none.return_value = value
     return result
 
 
 class TestRefreshTokenRepository:
+    """Тесты для репозитория refresh-токенов."""
     async def test_create_token_persists_refresh_token(self, mock_session):
+        """Проверяет сохранение данных."""
         repo = RefreshTokenRepository(mock_session)
         expires_at = datetime.now(timezone.utc) + timedelta(days=30)
 
-        token = await repo.create_token(user_id=7, jti="token-jti", expires_at=expires_at)
+        token = await repo.create_token(
+            user_id=7,
+            jti="token-jti",
+            expires_at=expires_at,
+        )
 
         mock_session.add.assert_called_once_with(token)
         mock_session.flush.assert_awaited_once()
@@ -33,7 +40,9 @@ class TestRefreshTokenRepository:
         assert token.jti == "token-jti"
         assert token.expires_at == expires_at
 
-    async def test_get_active_token_returns_token_when_found(self, mock_session, make_refresh_token):
+    async def test_get_active_token_returns_token_when_found(
+            self, mock_session, make_refresh_token):
+        """Проверяет ожидаемый результат."""
         token = make_refresh_token(user_id=3, jti="active-jti")
         mock_session.execute.return_value = _fake_result(token)
         repo = RefreshTokenRepository(mock_session)
@@ -46,7 +55,9 @@ class TestRefreshTokenRepository:
 
         assert result is token
 
-    async def test_revoke_sets_revoked_at_and_flushes(self, mock_session, make_refresh_token):
+    async def test_revoke_sets_revoked_at_and_flushes(
+            self, mock_session, make_refresh_token):
+        """Проверяет рабочий сценарий."""
         token = make_refresh_token()
         revoked_at = datetime.now(timezone.utc)
         repo = RefreshTokenRepository(mock_session)

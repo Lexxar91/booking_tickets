@@ -9,17 +9,27 @@ API-тесты для роутов event_service.
 
 from unittest.mock import AsyncMock, create_autospec
 
-from src.api.v1.events import create_event, delete_event, event_update, get_event, list_events
+from src.api.v1.events import (
+    create_event,
+    delete_event,
+    event_update,
+    get_event,
+    list_events,
+)
 from src.schemas.event import EventCreate, EventUpdate
 from src.services.event_service import EventServices
 
 
 class TestEventsApi:
-    async def test_create_event_returns_created_event_and_commits(self, make_event):
+    """Тесты API мероприятий."""
+    async def test_create_event_returns_created_event_and_commits(
+            self, make_event):
+        """Проверяет успешный сценарий с commit."""
         session = AsyncMock()
         session.commit = AsyncMock()
         service = create_autospec(EventServices, instance=True)
-        service.create_event.return_value = make_event(event_id=5, title="Concert")
+        service.create_event.return_value = make_event(
+            event_id=5, title="Concert")
 
         result = await create_event(
             event_in=EventCreate(
@@ -41,9 +51,10 @@ class TestEventsApi:
         assert event_in.title == "Concert"
 
     async def test_list_events_passes_pagination_to_service(self, make_event):
-        session = AsyncMock()
+        """Проверяет рабочий сценарий."""
         service = create_autospec(EventServices, instance=True)
-        service.list_events.return_value = [make_event(event_id=1), make_event(event_id=2)]
+        service.list_events.return_value = [
+            make_event(event_id=1), make_event(event_id=2)]
 
         result = await list_events(
             limit=5,
@@ -55,9 +66,10 @@ class TestEventsApi:
         service.list_events.assert_awaited_once_with(limit=5, offset=10)
 
     async def test_get_event_returns_single_event(self, make_event):
-        session = AsyncMock()
+        """Проверяет ожидаемый результат."""
         service = create_autospec(EventServices, instance=True)
-        service.get_event.return_value = make_event(event_id=8, title="Festival")
+        service.get_event.return_value = make_event(
+            event_id=8, title="Festival")
 
         result = await get_event(
             event_id=8,
@@ -67,11 +79,14 @@ class TestEventsApi:
         assert result.title == "Festival"
         service.get_event.assert_awaited_once_with(8)
 
-    async def test_patch_event_commits_and_returns_updated_event(self, make_event):
+    async def test_patch_event_commits_and_returns_updated_event(
+            self, make_event):
+        """Проверяет успешный сценарий с commit."""
         session = AsyncMock()
         session.commit = AsyncMock()
         service = create_autospec(EventServices, instance=True)
-        service.event_update.return_value = make_event(event_id=3, title="Updated concert")
+        service.event_update.return_value = make_event(
+            event_id=3, title="Updated concert")
 
         result = await event_update(
             event_id=3,
@@ -84,9 +99,13 @@ class TestEventsApi:
         assert result.title == "Updated concert"
         session.commit.assert_awaited_once()
         assert service.event_update.await_args.args[0] == 3
-        assert service.event_update.await_args.args[1].title == "Updated concert"
+        assert (
+            service.event_update.await_args.args[1].title
+            == "Updated concert"
+        )
 
     async def test_delete_event_commits_and_returns_204(self):
+        """Проверяет успешный сценарий с commit."""
         session = AsyncMock()
         session.commit = AsyncMock()
         service = create_autospec(EventServices, instance=True)

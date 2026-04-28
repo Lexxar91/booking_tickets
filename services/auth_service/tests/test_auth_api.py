@@ -15,7 +15,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from starlette.requests import Request
 
 from src.api.v1.auth import login, logout, refresh, register
-from src.schemas.user import LogoutRequest, RefreshTokenRequest, TokenPair, UserRegister
+from src.schemas.user import (
+    LogoutRequest,
+    RefreshTokenRequest,
+    TokenPair,
+    UserRegister,
+)
 from src.services.auth_service import AuthService
 
 
@@ -24,6 +29,7 @@ def _build_request(
     headers: dict[str, str] | None = None,
     client_host: str = "127.0.0.1",
 ) -> Request:
+    """Собирает тестовый HTTP-запрос."""
     raw_headers = [
         (key.lower().encode("latin-1"), value.encode("latin-1"))
         for key, value in (headers or {}).items()
@@ -39,14 +45,18 @@ def _build_request(
 
 
 class TestAuthApi:
+    """Тесты API авторизации."""
     async def test_register_returns_created_user_and_commits(self, make_user):
+        """Проверяет успешный сценарий с commit."""
         session = AsyncMock()
         session.commit = AsyncMock()
         service = create_autospec(AuthService, instance=True)
-        service.register.return_value = make_user(user_id=11, email="new@example.com")
+        service.register.return_value = make_user(
+            user_id=11, email="new@example.com")
 
         result = await register(
-            user_in=UserRegister(email="new@example.com", password="Str0ngP@ss!"),
+            user_in=UserRegister(email="new@example.com",
+                                 password="Str0ngP@ss!"),
             session=session,
             service=service,
         )
@@ -58,6 +68,7 @@ class TestAuthApi:
         assert user_in.password == "Str0ngP@ss!"
 
     async def test_login_uses_forwarded_ip_and_returns_token_pair(self):
+        """Проверяет ожидаемый результат."""
         session = AsyncMock()
         session.commit = AsyncMock()
         service = create_autospec(AuthService, instance=True)
@@ -67,7 +78,8 @@ class TestAuthApi:
         )
 
         result = await login(
-            request=_build_request(headers={"x-forwarded-for": "203.0.113.10, 10.0.0.5"}),
+            request=_build_request(
+                headers={"x-forwarded-for": "203.0.113.10, 10.0.0.5"}),
             form_data=OAuth2PasswordRequestForm(
                 username="user@example.com",
                 password="secret123",
@@ -86,10 +98,12 @@ class TestAuthApi:
         }
 
     async def test_login_commits_even_when_service_raises_http_exception(self):
+        """Проверяет сценарий с ошибкой."""
         session = AsyncMock()
         session.commit = AsyncMock()
         service = create_autospec(AuthService, instance=True)
-        service.login.side_effect = HTTPException(status_code=401, detail="Неверный email или пароль")
+        service.login.side_effect = HTTPException(
+            status_code=401, detail="Неверный email или пароль")
 
         with pytest.raises(HTTPException) as exc_info:
             await login(
@@ -107,6 +121,7 @@ class TestAuthApi:
         session.commit.assert_awaited_once()
 
     async def test_refresh_commits_and_returns_new_token_pair(self):
+        """Проверяет успешный сценарий с commit."""
         session = AsyncMock()
         session.commit = AsyncMock()
         service = create_autospec(AuthService, instance=True)
@@ -126,6 +141,7 @@ class TestAuthApi:
         session.commit.assert_awaited_once()
 
     async def test_logout_returns_204_and_commits(self):
+        """Проверяет успешный сценарий с commit."""
         session = AsyncMock()
         session.commit = AsyncMock()
         service = create_autospec(AuthService, instance=True)

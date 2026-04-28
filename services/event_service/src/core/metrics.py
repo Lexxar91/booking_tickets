@@ -28,25 +28,25 @@ total_events = Gauge(
 
 
 def track_event_created() -> None:
-    """Увеличивает счётчик созданных мероприятий."""
+    """Выполняет track event created."""
     events_created_total.inc()
 
 
 def track_event_updated() -> None:
-    """Увеличивает счётчик обновлённых мероприятий."""
+    """Выполняет track event updated."""
     events_updated_total.inc()
 
 
 def track_event_deleted() -> None:
-    """Увеличивает счётчик удалённых мероприятий."""
+    """Выполняет track event deleted."""
     events_deleted_total.inc()
 
 
 def increment_total_events() -> None:
-    """Увеличивает gauge общего числа мероприятий."""
+    """Выполняет increment total events."""
     total_events.inc()
 
 
 def decrement_total_events() -> None:
-    """Уменьшает gauge общего числа мероприятий."""
+    """Выполняет decrement total events."""
     total_events.dec()

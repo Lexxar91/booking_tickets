@@ -14,16 +14,24 @@ from src.repositories.event_repo import EventRepository
 from src.services.event_service import EventServices
 
 
-def _build_service(repository: EventRepository | None = None) -> tuple[EventServices, EventRepository]:
+def _build_service(repository: EventRepository |
+                   None = None) -> tuple[EventServices, EventRepository]:
+    """Собирает сервис и зависимости для теста."""
     repository = repository or create_autospec(EventRepository, instance=True)
     service = EventServices(repository)
     return service, repository
 
 
 class TestEventServicesCreate:
-    async def test_create_event_returns_repository_result(self, event_create_data, make_event):
+    """Тесты создания мероприятий."""
+    async def test_create_event_returns_repository_result(
+            self, event_create_data, make_event):
+        """Проверяет ожидаемый результат."""
         service, repository = _build_service()
-        event = make_event(event_id=10, title=event_create_data.title, price=event_create_data.price)
+        event = make_event(
+            event_id=10,
+            title=event_create_data.title,
+            price=event_create_data.price)
         repository.create.return_value = event
 
         result = await service.create_event(event_create_data)
@@ -33,7 +41,9 @@ class TestEventServicesCreate:
 
 
 class TestEventServicesGetEvent:
+    """Тесты получения мероприятия."""
     async def test_get_event_returns_event_when_found(self, make_event):
+        """Проверяет ожидаемый результат."""
         service, repository = _build_service()
         event = make_event(event_id=5)
         repository.get_by_event_id.return_value = event
@@ -44,6 +54,7 @@ class TestEventServicesGetEvent:
         repository.get_by_event_id.assert_awaited_once_with(5)
 
     async def test_get_event_raises_404_when_not_found(self):
+        """Проверяет ошибку 404."""
         service, repository = _build_service()
         repository.get_by_event_id.return_value = None
 
@@ -54,7 +65,9 @@ class TestEventServicesGetEvent:
 
 
 class TestEventServicesListEvents:
+    """Тесты списка мероприятий."""
     async def test_list_events_returns_repository_result(self, make_event):
+        """Проверяет ожидаемый результат."""
         service, repository = _build_service()
         events = [make_event(event_id=1), make_event(event_id=2)]
         repository.get_all_events.return_value = events
@@ -66,10 +79,14 @@ class TestEventServicesListEvents:
 
 
 class TestEventServicesUpdate:
-    async def test_event_update_updates_existing_event(self, make_event, event_update_data):
+    """Тесты обновления мероприятия."""
+    async def test_event_update_updates_existing_event(
+            self, make_event, event_update_data):
+        """Проверяет обновление данных."""
         service, repository = _build_service()
         event = make_event(event_id=7)
-        updated_event = make_event(event_id=7, title="Updated concert", price=event_update_data.price)
+        updated_event = make_event(
+            event_id=7, title="Updated concert", price=event_update_data.price)
         repository.get_by_event_id.return_value = event
         repository.event_update.return_value = updated_event
 
@@ -77,9 +94,12 @@ class TestEventServicesUpdate:
 
         assert result is updated_event
         repository.get_by_event_id.assert_awaited_once_with(7)
-        repository.event_update.assert_awaited_once_with(event, event_update_data)
+        repository.event_update.assert_awaited_once_with(
+            event, event_update_data)
 
-    async def test_event_update_raises_404_for_missing_event(self, event_update_data):
+    async def test_event_update_raises_404_for_missing_event(
+            self, event_update_data):
+        """Проверяет ошибку 404."""
         service, repository = _build_service()
         repository.get_by_event_id.return_value = None
 
@@ -91,7 +111,9 @@ class TestEventServicesUpdate:
 
 
 class TestEventServicesDelete:
+    """Тесты удаления мероприятия."""
     async def test_delete_event_deletes_existing_event(self, make_event):
+        """Проверяет удаление данных."""
         service, repository = _build_service()
         event = make_event(event_id=12)
         repository.get_by_event_id.return_value = event
@@ -103,6 +125,7 @@ class TestEventServicesDelete:
         repository.event_delete.assert_awaited_once_with(event)
 
     async def test_delete_event_raises_404_for_missing_event(self):
+        """Проверяет ошибку 404."""
         service, repository = _build_service()
         repository.get_by_event_id.return_value = None
 

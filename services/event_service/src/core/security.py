@@ -5,6 +5,7 @@ from src.schemas.auth import TokenPayload
 
 
 def decode_token(token: str) -> TokenPayload:
+    """Декодирует JWT-токен."""
     payload = jwt.decode(
         token,
         settings.jwt_public_key,

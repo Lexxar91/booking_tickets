@@ -6,7 +6,7 @@ from alembic import context
 
 from src.core.config import settings
 from src.core.database import Base
-from src.models.booking import Booking, EventTickets  # импортируем обе модели
+from src.models.booking import Booking, EventTickets  # noqa: F401
 
 config = context.config
 
@@ -17,6 +17,7 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
+    """Запускает миграции в offline-режиме."""
     context.configure(
         url=settings.database_url,
         target_metadata=target_metadata,
@@ -29,6 +30,7 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection):
+    """Выполняет миграции на подключении."""
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
@@ -40,6 +42,7 @@ def do_run_migrations(connection):
 
 
 async def run_async_migrations() -> None:
+    """Запускает асинхронные миграции."""
     connectable = create_async_engine(
         settings.database_url,
         poolclass=pool.NullPool,
@@ -55,6 +58,7 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
+    """Запускает миграции в online-режиме."""
     asyncio.run(run_async_migrations())
 
 

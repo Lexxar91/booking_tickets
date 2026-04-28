@@ -15,5 +15,5 @@ import pytest
 
 @pytest.fixture()
 def retry_task():
-    """Минимальный Celery task double для тестов retry-поведения."""
+    """Выполняет retry task."""
     return SimpleNamespace(retry=MagicMock())

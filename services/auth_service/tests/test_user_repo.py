@@ -15,15 +15,20 @@ from src.schemas.user import UserRegister
 
 
 def _fake_result(value):
+    """Создает фейковый результат запроса."""
     result = MagicMock()
     result.scalar_one_or_none.return_value = value
     return result
 
 
 class TestUserRepository:
-    async def test_create_user_hashes_password_and_persists_user(self, mock_session):
+    """Тесты репозитория пользователей."""
+    async def test_create_user_hashes_password_and_persists_user(
+            self, mock_session):
+        """Проверяет сохранение данных."""
         repo = UserRepository(mock_session)
-        user_data = UserRegister(email="new@example.com", password="Str0ngP@ss!")
+        user_data = UserRegister(
+            email="new@example.com", password="Str0ngP@ss!")
 
         created_user = await repo.create_user(user_data)
 
@@ -32,9 +37,12 @@ class TestUserRepository:
         mock_session.refresh.assert_awaited_once_with(created_user)
         assert created_user.email == "new@example.com"
         assert created_user.hashed_password != "Str0ngP@ss!"
-        assert verify_password("Str0ngP@ss!", created_user.hashed_password) is True
+        assert verify_password(
+            "Str0ngP@ss!", created_user.hashed_password) is True
 
-    async def test_get_user_by_id_returns_user_when_found(self, mock_session, make_user):
+    async def test_get_user_by_id_returns_user_when_found(
+            self, mock_session, make_user):
+        """Проверяет ожидаемый результат."""
         user = make_user(user_id=5, email="found@example.com")
         mock_session.execute.return_value = _fake_result(user)
         repo = UserRepository(mock_session)
@@ -43,7 +51,9 @@ class TestUserRepository:
 
         assert result is user
 
-    async def test_get_user_by_email_returns_none_when_user_missing(self, mock_session):
+    async def test_get_user_by_email_returns_none_when_user_missing(
+            self, mock_session):
+        """Проверяет ожидаемый результат."""
         mock_session.execute.return_value = _fake_result(None)
         repo = UserRepository(mock_session)
 

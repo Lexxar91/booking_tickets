@@ -7,10 +7,13 @@ from src.models.login_attempt import LoginAttempt
 
 
 class LoginAttemptRepository:
+    """Работает с попытками входа в базе данных."""
     def __init__(self, session: AsyncSession):
+        """Сохраняет сессию репозитория."""
         self.session = session
 
     async def get_by_bucket(self, bucket: str) -> LoginAttempt | None:
+        """Ищет попытку входа по ключу."""
         stmt = select(LoginAttempt).where(LoginAttempt.bucket == bucket)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
@@ -23,6 +26,7 @@ class LoginAttemptRepository:
         max_attempts: int,
         block_seconds: int,
     ) -> LoginAttempt:
+        """Обновляет счетчик неудачных входов."""
         attempt = await self.get_by_bucket(bucket)
 
         if attempt is None:
@@ -35,7 +39,8 @@ class LoginAttemptRepository:
             )
             self.session.add(attempt)
         else:
-            if attempt.window_started_at + timedelta(seconds=window_seconds) <= now:
+            if attempt.window_started_at + timedelta(
+                    seconds=window_seconds) <= now:
                 attempt.failed_attempts = 0
                 attempt.window_started_at = now
                 attempt.blocked_until = None
@@ -50,6 +55,7 @@ class LoginAttemptRepository:
         return attempt
 
     async def clear(self, bucket: str) -> None:
+        """Сбрасывает счетчик неудачных входов."""
         attempt = await self.get_by_bucket(bucket)
         if attempt is None:
             return

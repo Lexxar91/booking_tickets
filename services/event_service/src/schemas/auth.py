@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 
 class TokenPayload(BaseModel):
+    """Описывает payload JWT-токена."""
     sub: str
     role: str
     type: str

@@ -19,10 +19,10 @@ METRICS_PORT = int(os.getenv("METRICS_PORT", "9100"))
 
 
 class MetricsHandler(BaseHTTPRequestHandler):
-    """Простой HTTP handler для Prometheus scrape endpoint."""
+    """Описывает класс MetricsHandler."""
 
     def do_GET(self) -> None:
-        """Возвращает метрики по пути `/metrics`."""
+        """Выполняет do GET."""
         if self.path == "/metrics":
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", CONTENT_TYPE_LATEST)
@@ -34,12 +34,12 @@ class MetricsHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def log_message(self, format: str, *args) -> None:
-        """Отключаем логирование каждого запроса в production."""
+        """Выполняет log message."""
         return None
 
 
 def run_metrics_server(port: int = METRICS_PORT) -> None:
-    """Запускает HTTP-сервер для экспорта метрик."""
+    """Запускает metrics server."""
     server = HTTPServer(("0.0.0.0", port), MetricsHandler)
     print(f"Metrics server started on port {port}")
     server.serve_forever()

@@ -11,30 +11,22 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
-    """
-    Dependency — извлекает user_id из JWT токена.
-
-    Booking Service использует только публичный ключ Auth Service.
-    Это позволяет валидировать токен локально, но не даёт выпускать новые токены.
-
-    Raises:
-        HTTPException 401: Если токен невалидный, протухший или неверного типа.
-    """
+    """Возвращает id пользователя из access-токена."""
     try:
         payload = decode_token(token)
-    
+
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Невалидный или протухший токен",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if payload.type != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверный тип токена",
             headers={"WWW-Authenticate": "Bearer"},
-    )
+        )
 
     return int(payload.sub)

@@ -13,18 +13,7 @@ def send_email(
     attachment: bytes | None = None,
     attachment_name: str | None = None,
 ) -> None:
-    """
-    Отправляет email через SMTP.
-    Если нужно заменить Gmail на SendGrid или AWS SES —
-    меняем только этот файл, остальной код не трогаем.
-
-    Args:
-        to: email получателя
-        subject: тема письма
-        html: HTML тело письма
-        attachment: бинарные данные вложения (например PDF)
-        attachment_name: имя файла вложения
-    """
+    """Отправляет email-сообщение."""
     smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
     smtp_user = os.getenv("SMTP_USER", "")

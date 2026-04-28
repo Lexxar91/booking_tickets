@@ -7,6 +7,7 @@ from src.core.database import Base
 
 
 class RefreshToken(Base):
+    """Описывает модель refresh-токена."""
     __tablename__ = "refresh_tokens"
     __table_args__ = {"schema": "auth"}
 
@@ -17,9 +18,12 @@ class RefreshToken(Base):
         nullable=False,
         index=True,
     )
-    jti: Mapped[str] = mapped_column(String(36), nullable=False, unique=True, index=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    jti: Mapped[str] = mapped_column(
+        String(36), nullable=False, unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

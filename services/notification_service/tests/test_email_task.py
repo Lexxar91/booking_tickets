@@ -10,17 +10,25 @@ from src.tasks.email import send_booking_confirmation
 
 
 class RetryTriggered(Exception):
-    """Техническое исключение для проверки retry-пути в тестах."""
+    """Описывает класс RetryTriggered."""
 
 
 class TestSendBookingConfirmationTask:
-    def test_task_builds_pdf_html_and_sends_email(self, monkeypatch, retry_task):
-        monkeypatch.setattr("src.tasks.email.generate_ticket_pdf", lambda **kwargs: b"%PDF-test")
-        monkeypatch.setattr("src.tasks.email.build_booking_confirmation_html", lambda **kwargs: "<h1>ok</h1>")
+    """Тесты задачи отправки подтверждения."""
+    def test_task_builds_pdf_html_and_sends_email(
+            self, monkeypatch, retry_task):
+        """Проверяет рабочий сценарий."""
+        monkeypatch.setattr(
+            "src.tasks.email.generate_ticket_pdf",
+            lambda **kwargs: b"%PDF-test")
+        monkeypatch.setattr(
+            "src.tasks.email.build_booking_confirmation_html",
+            lambda **kwargs: "<h1>ok</h1>")
 
         captured = {}
 
         def fake_send_email(**kwargs):
+            """Выполняет fake send email."""
             captured.update(kwargs)
 
         monkeypatch.setattr("src.tasks.email.send_email", fake_send_email)
@@ -38,11 +46,17 @@ class TestSendBookingConfirmationTask:
         assert "Rock Festival" in captured["subject"]
 
     def test_task_retries_on_smtp_exception(self, monkeypatch):
-        monkeypatch.setattr("src.tasks.email.generate_ticket_pdf", lambda **kwargs: b"%PDF-test")
-        monkeypatch.setattr("src.tasks.email.build_booking_confirmation_html", lambda **kwargs: "<h1>ok</h1>")
+        """Проверяет повторный запуск задачи."""
+        monkeypatch.setattr(
+            "src.tasks.email.generate_ticket_pdf",
+            lambda **kwargs: b"%PDF-test")
+        monkeypatch.setattr(
+            "src.tasks.email.build_booking_confirmation_html",
+            lambda **kwargs: "<h1>ok</h1>")
         monkeypatch.setattr(
             "src.tasks.email.send_email",
-            lambda **kwargs: (_ for _ in ()).throw(smtplib.SMTPException("smtp failed")),
+            lambda **kwargs: (_ for _ in ()
+                              ).throw(smtplib.SMTPException("smtp failed")),
         )
         monkeypatch.setattr(
             send_booking_confirmation,
@@ -59,6 +73,7 @@ class TestSendBookingConfirmationTask:
             )
 
     def test_task_reraises_unexpected_exception(self, monkeypatch, retry_task):
+        """Проверяет сценарий с ошибкой."""
         monkeypatch.setattr(
             "src.tasks.email.generate_ticket_pdf",
             lambda **kwargs: (_ for _ in ()).throw(RuntimeError("pdf failed")),

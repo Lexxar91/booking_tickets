@@ -19,7 +19,9 @@ from src.schemas.booking import BookingCreate
 
 
 class BookingService:
+    """Содержит бизнес-логику бронирований."""
     def __init__(self, repository: BookingRepository, session: AsyncSession):
+        """Сохраняет зависимости сервиса."""
         self.repository = repository
         self.session = session
 
@@ -28,22 +30,7 @@ class BookingService:
         booking_data: BookingCreate,
         user_id: int,
     ) -> Booking:
-        """
-        Создание бронирования с защитой от Race Condition.
-
-        Весь метод выполняется в одной транзакции:
-        1. Получаем данные мероприятия из Event Service
-        2. SELECT FOR UPDATE — блокируем строку мероприятия
-        3. Проверяем наличие билетов
-        4. Создаём бронирование
-        5. Уменьшаем счётчик билетов в Event Service
-
-        SELECT FOR UPDATE — это строчная блокировка (row-level lock).
-        Пока транзакция А держит блокировку, транзакция Б будет ЖДАТЬ
-        на этой же строке. Когда А сделает commit — Б увидит уже
-        обновлённое значение available_tickets и либо купит последний
-        билет, либо получит отказ. Двойная продажа невозможна.
-        """
+        """Создает бронирование."""
 
         event = await get_event(booking_data.event_id)
 
@@ -100,10 +87,7 @@ class BookingService:
         return booking
 
     async def get_booking(self, booking_id: int, user_id: int) -> Booking:
-        """
-        Получение бронирования.
-        Проверяем что бронирование принадлежит текущему пользователю.
-        """
+        """Возвращает бронирование пользователя."""
         track_booking_retrieved()
         booking = await self.repository.get_by_booking_id(booking_id)
 
@@ -121,17 +105,16 @@ class BookingService:
         return booking
 
     async def get_my_bookings(self, user_id: int) -> list[Booking]:
-        """Получение всех бронирований текущего пользователя."""
+        """Возвращает список бронирований пользователя."""
         return await self.repository.get_by_user_id(user_id)
 
     async def cancel_booking(self, booking_id: int, user_id: int) -> Booking:
-        """
-        Отмена бронирования.
-        Возвращаем билет — увеличиваем счётчик обратно.
-        Тоже используем SELECT FOR UPDATE чтобы не было гонки.
-        """
+        """Отменяет бронирование пользователя."""
 
-        booking = await self.get_booking(booking_id=booking_id, user_id=user_id)
+        booking = await self.get_booking(
+            booking_id=booking_id,
+            user_id=user_id,
+        )
 
         if booking.status == BookingStatus.CANCELLED:
             track_booking_cancelled(status="not_found")
