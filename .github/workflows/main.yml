@@ -75,10 +75,10 @@ jobs:
             poetry-${{ runner.os }}-${{ matrix.service }}-
 
       - name: Install dependencies
-        run: python -m poetry install --with dev --no-interaction --no-root
+        run: poetry install --with dev --no-interaction --no-root
 
       - name: Run tests
-        run: python -m poetry run pytest
+        run: poetry run pytest
 
       
           
