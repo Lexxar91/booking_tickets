@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 from src.models.booking import BookingStatus
 
 

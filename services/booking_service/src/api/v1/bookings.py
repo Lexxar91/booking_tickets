@@ -1,14 +1,10 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.core.database import get_async_session
-
 from src.core.dependencies import get_current_user_id
-
-from src.schemas.booking import BookingCreate, BookingRead
 from src.repositories.booking_repo import BookingRepository
+from src.schemas.booking import BookingCreate, BookingRead
 from src.services.booking_service import BookingService
-
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 

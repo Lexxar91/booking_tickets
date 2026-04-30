@@ -1,12 +1,10 @@
-from fastapi import APIRouter, Depends, status, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.core.dependencies import require_admin
 from src.core.database import get_async_session
-from src.schemas.event import EventCreate, EventRead, EventUpdate
+from src.core.dependencies import require_admin
 from src.repositories.event_repo import EventRepository
+from src.schemas.event import EventCreate, EventRead, EventUpdate
 from src.services.event_service import EventServices
-
 
 router = APIRouter(prefix="/events", tags=["Events"])
 

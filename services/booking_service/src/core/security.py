@@ -1,5 +1,4 @@
 from jose import jwt
-
 from src.core.config import settings
 from src.schemas.booking import TokenPayload
 

@@ -1,6 +1,5 @@
 import httpx
 from fastapi import HTTPException, status
-
 from src.core.config import settings
 
 

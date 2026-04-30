@@ -1,10 +1,7 @@
 import smtplib
 
-from src.metrics import (
-    track_email_retry,
-    track_email_sent,
-    track_pdf_generated,
-)
+from src.metrics import (track_email_retry, track_email_sent,
+                         track_pdf_generated)
 from src.services.pdf import generate_ticket_pdf
 from src.services.smtp import send_email
 from src.services.templates import build_booking_confirmation_html

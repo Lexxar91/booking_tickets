@@ -1,7 +1,7 @@
 from decimal import Decimal
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.models.booking import Booking, BookingStatus
 
 

@@ -2,7 +2,6 @@ from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.models.refresh_token import RefreshToken
 
 

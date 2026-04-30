@@ -1,14 +1,9 @@
 from typing import Sequence
 
 from fastapi import HTTPException, status
-
-from src.core.metrics import (
-    decrement_total_events,
-    increment_total_events,
-    track_event_created,
-    track_event_deleted,
-    track_event_updated,
-)
+from src.core.metrics import (decrement_total_events, increment_total_events,
+                              track_event_created, track_event_deleted,
+                              track_event_updated)
 from src.models.event import Event
 from src.repositories.event_repo import EventRepository
 from src.schemas.event import EventCreate, EventUpdate

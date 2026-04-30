@@ -1,7 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
-
 from src.core.security import decode_token
 
 # OAuth2PasswordBearer указывает FastAPI где искать токен —

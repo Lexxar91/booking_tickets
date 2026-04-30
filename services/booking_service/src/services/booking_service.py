@@ -3,16 +3,11 @@ from decimal import Decimal
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.core.celery_client import celery_client
-from src.core.metrics import (
-    increment_tickets_sold,
-    set_tickets_available,
-    track_booking_cancelled,
-    track_booking_created,
-    track_booking_retrieved,
-)
 from src.core.http_client import get_event
+from src.core.metrics import (increment_tickets_sold, set_tickets_available,
+                              track_booking_cancelled, track_booking_created,
+                              track_booking_retrieved)
 from src.models.booking import Booking, BookingStatus, EventTickets
 from src.repositories.booking_repo import BookingRepository
 from src.schemas.booking import BookingCreate

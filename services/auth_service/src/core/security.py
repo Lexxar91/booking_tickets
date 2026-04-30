@@ -3,10 +3,8 @@ from uuid import uuid4
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-
 from src.core.config import settings
 from src.schemas.user import TokenPayload
-
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, PostgresDsn, SecretStr, computed_field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 def _load_key_material(

@@ -1,6 +1,5 @@
 import os
 
-
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "booking_rabbit")
 RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "password")
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")

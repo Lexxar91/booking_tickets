@@ -1,18 +1,14 @@
 import datetime
 from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException, status
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from src.api.v1.auth import router as auth_router
 from src.core.config import settings
-from src.core.database import (
-    dispose_engine,
-    get_async_session,
-    get_db_session,
-    init_engine,
-)
+from src.core.database import (dispose_engine, get_async_session,
+                               get_db_session, init_engine)
 
 
 @asynccontextmanager

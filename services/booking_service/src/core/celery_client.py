@@ -1,6 +1,6 @@
-from celery import Celery
 import os
 
+from celery import Celery
 
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "booking_rabbit")
 RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "password")

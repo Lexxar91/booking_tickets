@@ -1,23 +1,14 @@
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
-
 from src.core.config import settings
-from src.core.metrics import (
-    decrement_active_sessions,
-    increment_active_sessions,
-    track_login_attempt,
-    track_logout,
-    track_registration,
-    track_token_refresh,
-)
-from src.core.security import (
-    JWTError,
-    create_access_token,
-    create_refresh_token,
-    decode_token,
-    verify_password,
-)
+from src.core.metrics import (decrement_active_sessions,
+                              increment_active_sessions, track_login_attempt,
+                              track_logout, track_registration,
+                              track_token_refresh)
+from src.core.security import (JWTError, create_access_token,
+                               create_refresh_token, decode_token,
+                               verify_password)
 from src.models.user import User
 from src.repositories.login_attempt_repo import LoginAttemptRepository
 from src.repositories.refresh_token_repo import RefreshTokenRepository
