@@ -65,10 +65,10 @@ jobs:
           pip install poetry
 
       - name: Install dependencies
-        run: poetry install --with dev --no-interaction --no-root
+        run: python -m poetry install --with dev --no-interaction --no-root
 
       - name: Run tests
-        run: poetry run pytest
+        run: python -m poetry run pytest
 
       
           

@@ -7,3 +7,5 @@ secrets/
 __pycache__/
 *.pyc
 .pytest_cache/
+.cursorrules
+cursorrules
