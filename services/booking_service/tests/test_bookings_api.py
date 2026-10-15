@@ -9,12 +9,8 @@ API-тесты для роутов booking_service.
 
 from unittest.mock import AsyncMock, create_autospec
 
-from src.api.v1.bookings import (
-    booking_create,
-    cancel_booking,
-    get_booking,
-    get_my_bookings,
-)
+from src.api.v1.bookings import (booking_create, cancel_booking, get_booking,
+                                 get_my_bookings)
 from src.models.booking import BookingStatus
 from src.schemas.booking import BookingCreate
 from src.services.booking_service import BookingService
@@ -22,11 +18,9 @@ from src.services.booking_service import BookingService
 
 class TestBookingsApi:
     """Тесты API бронирований."""
-    async def test_create_booking_returns_created_booking_and_commits(
-            self, make_booking):
-        """Проверяет успешный сценарий с commit."""
-        session = AsyncMock()
-        session.commit = AsyncMock()
+    async def test_create_booking_returns_service_result(
+            self, make_booking) -> None:
+        """Проверяет передачу создания и фиксации брони сервису."""
         service = create_autospec(BookingService, instance=True)
         service.create.return_value = make_booking(
             booking_id=7, user_id=42, event_id=11)
@@ -35,12 +29,10 @@ class TestBookingsApi:
             booking_in=BookingCreate(
                 event_id=11, user_email="user@example.com"),
             current_user_id=42,
-            session=session,
             service=service,
         )
 
         assert result.id == 7
-        session.commit.assert_awaited_once()
         assert service.create.await_args.kwargs["user_id"] == 42
         booking_data = service.create.await_args.kwargs["booking_data"]
         assert booking_data.event_id == 11

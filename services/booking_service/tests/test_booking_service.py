@@ -12,7 +12,6 @@ from unittest.mock import MagicMock, create_autospec
 
 import pytest
 from fastapi import HTTPException
-
 from src.models.booking import BookingStatus
 from src.repositories.booking_repo import BookingRepository
 from src.schemas.booking import BookingCreate
@@ -22,6 +21,7 @@ from src.services.booking_service import BookingService
 def _fake_scalar_result(value):
     """Создает фейковый scalar-результат."""
     result = MagicMock()
+    result.scalar_one.return_value = value
     result.scalar_one_or_none.return_value = value
     return result
 
@@ -40,14 +40,16 @@ def _build_booking_service(
 
 class TestBookingServiceCreate:
     """Тесты создания бронирований."""
+    @pytest.mark.parametrize("commit_fails", [False, True])
     async def test_create_booking_with_existing_ticket_counter(
         self,
+        commit_fails: bool,
         monkeypatch,
         mock_session,
         make_booking,
         make_event_tickets,
-    ):
-        """Проверяет рабочий сценарий."""
+    ) -> None:
+        """Проверяет отправку только после успешной фиксации брони."""
         service, repository, _ = _build_booking_service(session=mock_session)
         booking_data = BookingCreate(
             event_id=11, user_email="user@example.com")
@@ -72,6 +74,19 @@ class TestBookingServiceCreate:
         mock_session.execute.return_value = _fake_scalar_result(event_tickets)
         repository.create_booking.return_value = booking
 
+        async def commit() -> None:
+            """Проверяет отсутствие уведомления до завершения commit."""
+            send_task.assert_not_called()
+            if commit_fails:
+                raise RuntimeError("commit failed")
+
+        mock_session.commit.side_effect = commit
+        if commit_fails:
+            with pytest.raises(RuntimeError, match="commit failed"):
+                await service.create(booking_data=booking_data, user_id=42)
+            send_task.assert_not_called()
+            return
+
         result = await service.create(booking_data=booking_data, user_id=42)
 
         assert result is booking
@@ -92,14 +107,16 @@ class TestBookingServiceCreate:
         )
         assert mock_session.add.call_count == 0
         assert mock_session.flush.await_count == 1
+        mock_session.commit.assert_awaited_once()
 
     async def test_create_booking_initializes_local_ticket_counter_on_first_booking(  # noqa: E501
         self,
         monkeypatch,
         mock_session,
         make_booking,
-    ):
-        """Проверяет рабочий сценарий."""
+        make_event_tickets,
+    ) -> None:
+        """Проверяет покупку после создания локального счетчика."""
         service, repository, _ = _build_booking_service(session=mock_session)
         booking_data = BookingCreate(event_id=5, user_email="user@example.com")
         event = {"id": 5, "title": "First sale",
@@ -117,17 +134,15 @@ class TestBookingServiceCreate:
         monkeypatch.setattr(
             "src.services.booking_service.celery_client.send_task", send_task)
 
-        mock_session.execute.return_value = _fake_scalar_result(None)
+        counter = make_event_tickets(event_id=5, available_tickets=2)
+        mock_session.execute.return_value = _fake_scalar_result(counter)
         repository.create_booking.return_value = booking
 
         result = await service.create(booking_data=booking_data, user_id=1)
 
         assert result is booking
-        mock_session.add.assert_called_once()
-        added_counter = mock_session.add.call_args.args[0]
-        assert added_counter.event_id == 5
-        assert added_counter.available_tickets == 1
-        assert mock_session.flush.await_count == 2
+        assert counter.available_tickets == 1
+        mock_session.commit.assert_awaited_once()
 
     async def test_create_booking_raises_409_when_tickets_are_sold_out(
         self,
@@ -240,7 +255,11 @@ class TestBookingServiceCancelBooking:
         assert booking.status == BookingStatus.CANCELLED
         assert event_tickets.available_tickets == 1
         mock_session.flush.assert_awaited_once()
-        mock_session.refresh.assert_awaited_once_with(booking)
+        assert mock_session.refresh.await_args_list[0].args == (booking,)
+        assert mock_session.refresh.await_args_list[0].kwargs == {
+            "with_for_update": True,
+        }
+        assert mock_session.refresh.await_count == 2
 
     async def test_cancel_booking_raises_409_when_already_cancelled(
             self, mock_session, make_booking):
@@ -277,4 +296,4 @@ class TestBookingServiceCancelBooking:
         assert result is booking
         assert booking.status == BookingStatus.CANCELLED
         mock_session.flush.assert_awaited_once()
-        mock_session.refresh.assert_awaited_once_with(booking)
+        assert mock_session.refresh.await_count == 2

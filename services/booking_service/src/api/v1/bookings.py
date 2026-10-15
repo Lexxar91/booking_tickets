@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.database import get_async_session
 from src.core.dependencies import get_current_user_id
+from src.models.booking import Booking
 from src.repositories.booking_repo import BookingRepository
 from src.schemas.booking import BookingCreate, BookingRead
 from src.services.booking_service import BookingService
@@ -26,16 +27,13 @@ def get_booking_service(
 async def booking_create(
     booking_in: BookingCreate,
     current_user_id: int = Depends(get_current_user_id),
-    session: AsyncSession = Depends(get_async_session),
     service: BookingService = Depends(get_booking_service)
-):
-    """Создает бронирование через API."""
-    new_booking = await service.create(
+) -> Booking:
+    """Создает бронь; сервис фиксирует ее до отправки уведомления."""
+    return await service.create(
         booking_data=booking_in,
         user_id=current_user_id,
     )
-    await session.commit()
-    return new_booking
 
 
 @router.get(
