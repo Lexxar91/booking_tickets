@@ -34,7 +34,7 @@
           <div class="session-card">
             <div class="session-topline">Текущая сессия</div>
             <div class="session-main" id="session-summary">Не авторизован</div>
-            <div class="session-sub" id="session-tokens">Access / Refresh недоступны</div>
+            <div class="session-sub" id="session-tokens">Войдите, чтобы управлять бронированиями</div>
           </div>
         </aside>
       </header>
@@ -44,11 +44,11 @@
           <div class="section-header">
             <div>
               <p class="section-kicker">Auth</p>
-              <h2>Доступ и токены</h2>
+              <h2>Вход и регистрация</h2>
             </div>
             <div class="section-actions">
-              <button class="mini-button" id="refresh-token-btn" type="button">Refresh</button>
-              <button class="mini-button danger" id="logout-btn" type="button">Logout</button>
+              <button class="mini-button" id="refresh-token-btn" type="button">Обновить сессию</button>
+              <button class="mini-button danger" id="logout-btn" type="button">Выйти</button>
             </div>
           </div>
 
@@ -80,16 +80,6 @@
             </form>
           </div>
 
-          <div class="token-box">
-            <div>
-              <span class="token-label">Access token</span>
-              <code id="access-token-preview">empty</code>
-            </div>
-            <div>
-              <span class="token-label">Refresh token</span>
-              <code id="refresh-token-preview">empty</code>
-            </div>
-          </div>
         </section>
 
         <section class="glass-card wide">

@@ -4,9 +4,13 @@ const storageKeys = {
   userEmail: "booking_ui_user_email",
 };
 
+// Удаляем токены, сохраненные предыдущей версией интерфейса.
+localStorage.removeItem(storageKeys.accessToken);
+localStorage.removeItem(storageKeys.refreshToken);
+
 const state = {
-  accessToken: localStorage.getItem(storageKeys.accessToken) || "",
-  refreshToken: localStorage.getItem(storageKeys.refreshToken) || "",
+  user: null,
+  csrfToken: "",
   userEmail: localStorage.getItem(storageKeys.userEmail) || "",
   events: [],
   bookings: [],
@@ -22,8 +26,6 @@ const elements = {
   sessionRole: document.getElementById("session-role"),
   sessionSummary: document.getElementById("session-summary"),
   sessionTokens: document.getElementById("session-tokens"),
-  accessTokenPreview: document.getElementById("access-token-preview"),
-  refreshTokenPreview: document.getElementById("refresh-token-preview"),
   eventsList: document.getElementById("events-list"),
   bookingsList: document.getElementById("bookings-list"),
   eventSearch: document.getElementById("event-search"),
@@ -32,59 +34,23 @@ const elements = {
   toastStack: document.getElementById("toast-stack"),
 };
 
-function decodeJwtPayload(token) {
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const payload = token.split(".")[1];
-    if (!payload) {
-      return null;
-    }
-
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const json = decodeURIComponent(
-      atob(normalized)
-        .split("")
-        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
-        .join(""),
-    );
-    return JSON.parse(json);
-  } catch {
-    return null;
-  }
-}
-
 function getCurrentUser() {
-  const payload = decodeJwtPayload(state.accessToken);
-  if (!payload) {
-    return null;
-  }
-
-  return {
-    id: payload.sub,
-    role: payload.role || "user",
-    type: payload.type,
-    email: state.userEmail || "unknown",
-  };
+  return state.user;
 }
 
-function saveSession({ accessToken, refreshToken, email }) {
-  state.accessToken = accessToken || "";
-  state.refreshToken = refreshToken || "";
-  state.userEmail = email || state.userEmail || "";
+function saveSession({ user, csrf_token }) {
+  state.user = user;
+  state.csrfToken = csrf_token;
+  state.userEmail = user.email;
 
-  localStorage.setItem(storageKeys.accessToken, state.accessToken);
-  localStorage.setItem(storageKeys.refreshToken, state.refreshToken);
   localStorage.setItem(storageKeys.userEmail, state.userEmail);
 
   renderSession();
 }
 
 function clearSession() {
-  state.accessToken = "";
-  state.refreshToken = "";
+  state.user = null;
+  state.csrfToken = "";
   state.userEmail = "";
 
   localStorage.removeItem(storageKeys.accessToken);
@@ -93,16 +59,6 @@ function clearSession() {
 
   renderSession();
   renderBookings();
-}
-
-function formatTokenPreview(token) {
-  if (!token) {
-    return "empty";
-  }
-  if (token.length <= 48) {
-    return token;
-  }
-  return `${token.slice(0, 24)} ... ${token.slice(-18)}`;
 }
 
 function formatDate(isoString) {
@@ -136,8 +92,8 @@ async function apiRequest(path, options = {}) {
   const config = { method: "GET", ...options };
   const headers = new Headers(config.headers || {});
 
-  if (config.auth && state.accessToken) {
-    headers.set("Authorization", `Bearer ${state.accessToken}`);
+  if (!["GET", "HEAD", "OPTIONS"].includes(config.method.toUpperCase()) && state.csrfToken) {
+    headers.set("X-CSRF-Token", state.csrfToken);
   }
 
   if (config.json) {
@@ -150,7 +106,7 @@ async function apiRequest(path, options = {}) {
     config.body = new URLSearchParams(config.form);
   }
 
-  const response = await fetch(path, { ...config, headers });
+  const response = await fetch(path, { ...config, headers, credentials: "same-origin" });
   const isJson = response.headers.get("content-type")?.includes("application/json");
   const payload = isJson ? await response.json() : await response.text();
 
@@ -159,7 +115,9 @@ async function apiRequest(path, options = {}) {
       typeof payload === "string"
         ? payload
         : payload?.detail || payload?.message || JSON.stringify(payload);
-    throw new Error(detail || `HTTP ${response.status}`);
+    const error = new Error(detail || `HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   return payload;
@@ -172,10 +130,8 @@ function renderSession() {
     ? `${user.email} · role=${user.role} · user_id=${user.id}`
     : "Не авторизован";
   elements.sessionTokens.textContent = user
-    ? "Access и refresh токены сохранены в localStorage"
-    : "Access / Refresh недоступны";
-  elements.accessTokenPreview.textContent = formatTokenPreview(state.accessToken);
-  elements.refreshTokenPreview.textContent = formatTokenPreview(state.refreshToken);
+    ? "Вход сохранён. Сессия обновляется автоматически."
+    : "Войдите, чтобы управлять бронированиями";
   elements.eventSubmitBtn.disabled = !user || user.role !== "admin";
 }
 
@@ -193,11 +149,13 @@ function renderServiceStatus() {
 
     item.innerHTML = `
       <div>
-        <strong>${service.label}</strong>
-        <div class="booking-meta">${service.detail}</div>
+        <strong></strong>
+        <div class="booking-meta"></div>
       </div>
       <span class="status-chip ${chipClass}">${chipLabel}</span>
     `;
+    item.querySelector("strong").textContent = service.label;
+    item.querySelector(".booking-meta").textContent = service.detail;
     elements.serviceStatus.appendChild(item);
   });
 }
@@ -228,10 +186,10 @@ function renderEvents() {
     article.innerHTML = `
       <div class="event-header">
         <div>
-          <div class="event-title">${event.title}</div>
+          <div class="event-title"></div>
           <div class="event-meta">
-            ${event.description || "Без описания"}<br />
-            ${formatDate(event.date_start)} - ${formatDate(event.date_end)}
+            <span class="event-description"></span><br />
+            <span class="event-dates"></span>
           </div>
         </div>
         <span class="mini-tag">${Number(event.price).toFixed(2)} RUB</span>
@@ -251,6 +209,11 @@ function renderEvents() {
         }
       </div>
     `;
+    article.querySelector(".event-title").textContent = event.title;
+    article.querySelector(".event-description").textContent =
+      event.description || "Без описания";
+    article.querySelector(".event-dates").textContent =
+      `${formatDate(event.date_start)} - ${formatDate(event.date_end)}`;
     elements.eventsList.appendChild(article);
   });
 }
@@ -258,7 +221,7 @@ function renderEvents() {
 function renderBookings() {
   elements.bookingsList.innerHTML = "";
 
-  if (!state.accessToken) {
+  if (!state.user) {
     elements.bookingsList.appendChild(
       createEmptyState("Авторизуйся, чтобы увидеть свои бронирования."),
     );
@@ -346,7 +309,7 @@ async function loadEvents() {
 }
 
 async function loadBookings() {
-  if (!state.accessToken) {
+  if (!state.user) {
     state.bookings = [];
     renderBookings();
     return;
@@ -391,11 +354,7 @@ async function handleLogin(event) {
       method: "POST",
       form: { username: email, password },
     });
-    saveSession({
-      accessToken: result.access_token,
-      refreshToken: result.refresh_token,
-      email,
-    });
+    saveSession(result);
     event.currentTarget.reset();
     showToast("Логин успешен. Сессия обновлена.");
     await Promise.all([loadEvents(), loadBookings(), loadHealth()]);
@@ -405,22 +364,17 @@ async function handleLogin(event) {
 }
 
 async function handleRefresh() {
-  if (!state.refreshToken) {
-    showToast("Нет refresh token для обновления сессии.", "error");
+  if (!state.user) {
+    showToast("Сначала войдите в систему.", "error");
     return;
   }
 
   try {
     const result = await apiRequest("/api/auth/refresh", {
       method: "POST",
-      json: { refresh_token: state.refreshToken },
     });
-    saveSession({
-      accessToken: result.access_token,
-      refreshToken: result.refresh_token,
-      email: state.userEmail,
-    });
-    showToast("Access token обновлен.");
+    saveSession(result);
+    showToast("Сессия обновлена.");
     await Promise.all([loadBookings(), loadHealth()]);
   } catch (error) {
     showToast(`Refresh не удался: ${error.message}`, "error");
@@ -428,7 +382,7 @@ async function handleRefresh() {
 }
 
 async function handleLogout() {
-  if (!state.refreshToken) {
+  if (!state.user) {
     clearSession();
     showToast("Локальная сессия очищена.");
     return;
@@ -437,20 +391,21 @@ async function handleLogout() {
   try {
     await apiRequest("/api/auth/logout", {
       method: "POST",
-      json: { refresh_token: state.refreshToken },
     });
-  } catch (error) {
-    showToast(`Logout через API не удался: ${error.message}`, "error");
-  } finally {
     clearSession();
     showToast("Сессия завершена.");
     await loadBookings();
+  } catch (error) {
+    if (error.status === 401) clearSession();
+    showToast(`Выход не удался: ${error.message}`, "error");
   }
 }
 
 function resetEventForm() {
   elements.eventForm.reset();
   elements.eventForm.elements.eventId.value = "";
+  elements.eventForm.elements.total_tickets.readOnly = false;
+  elements.eventForm.elements.total_tickets.title = "";
   elements.eventSubmitBtn.textContent = "Создать событие";
 }
 
@@ -460,6 +415,9 @@ function fillEventForm(event) {
   elements.eventForm.elements.description.value = event.description || "";
   elements.eventForm.elements.price.value = event.price;
   elements.eventForm.elements.total_tickets.value = event.total_tickets;
+  elements.eventForm.elements.total_tickets.readOnly = true;
+  elements.eventForm.elements.total_tickets.title =
+    "Количество билетов нельзя менять после создания события";
   elements.eventForm.elements.date_start.value = event.date_start.slice(0, 16);
   elements.eventForm.elements.date_end.value = event.date_end.slice(0, 16);
   elements.eventSubmitBtn.textContent = "Сохранить изменения";
@@ -638,7 +596,19 @@ function wireActions() {
   });
 }
 
+async function restoreSession() {
+  try {
+    saveSession(await apiRequest("/api/auth/session"));
+  } catch (error) {
+    clearSession();
+    if (error.status !== 401) {
+      showToast(`Не удалось восстановить вход: ${error.message}`, "error");
+    }
+  }
+}
+
 async function bootstrap() {
+  await restoreSession();
   renderSession();
   renderServiceStatus();
   renderEvents();
@@ -646,7 +616,7 @@ async function bootstrap() {
   wireActions();
 
   await Promise.all([loadHealth(), loadEvents()]);
-  if (state.accessToken) {
+  if (state.user) {
     await loadBookings();
   }
 }

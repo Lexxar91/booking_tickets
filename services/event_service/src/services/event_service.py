@@ -43,8 +43,16 @@ class EventServices:
         event_id: int,
         update_data: EventUpdate,
     ) -> Event:
-        """Обновляет существующее мероприятие."""
+        """Обновляет событие, запрещая изменение его вместимости."""
         event = await self.get_event(event_id)
+        if (
+            "total_tickets" in update_data.model_fields_set
+            and update_data.total_tickets != event.total_tickets
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Количество билетов нельзя менять после создания",
+            )
         track_event_updated()
         return await self.repository.event_update(event, update_data)
 

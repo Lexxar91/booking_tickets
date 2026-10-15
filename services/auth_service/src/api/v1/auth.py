@@ -24,10 +24,7 @@ def get_auth_service(
 
 
 def _get_client_ip(request: Request) -> str:
-    """Извлекает IP клиента из запроса."""
-    forwarded_for = request.headers.get("x-forwarded-for")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
+    """Возвращает IP соединения с учетом доверенных Uvicorn прокси."""
     return request.client.host if request.client else "unknown"
 
 

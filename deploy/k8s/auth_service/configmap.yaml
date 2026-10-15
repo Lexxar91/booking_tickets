@@ -12,3 +12,6 @@ data:
   POSTGRES_PORT: "5432"
   ALGORITHM: "RS256"
   JWT_ISSUER: "booking-auth-service"
+  BFF_ALLOWED_ORIGINS: '["https://booking-tickets.local"]'
+  EVENT_SERVICE_URL: "http://event-service:8000"
+  BOOKING_SERVICE_URL: "http://booking-service:8000"

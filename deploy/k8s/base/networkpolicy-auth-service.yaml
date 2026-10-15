@@ -13,6 +13,16 @@ spec:
     - to:
         - podSelector:
             matchLabels:
+              app: event-service
+        - podSelector:
+            matchLabels:
+              app: booking-service
+      ports:
+        - protocol: TCP
+          port: 8000
+    - to:
+        - podSelector:
+            matchLabels:
               app: postgres-auth
       ports:
         - protocol: TCP

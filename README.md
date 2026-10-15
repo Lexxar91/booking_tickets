@@ -188,6 +188,52 @@ Frontend вынесен в отдельный compose-файл, чтобы ег�
 
 ### Запуск frontend отдельно
 
+#### BFF: настройка браузерных сессий
+
+Браузер обращается к `/api/*` через HTTPS NGINX. NGINX направляет эти
+запросы в BFF внутри Auth Service (`/bff/*`), а BFF обращается к сервисам
+с серверным access-токеном. JWT API `/api/v1/auth/*` сохранён для других
+клиентов; frontend его больше не использует.
+
+Перед запуском сгенерируйте отдельный ключ:
+
+```bash
+python3 -c 'import base64, secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())'
+```
+
+Сохраните результат как `BFF_SESSION_KEY` в `.env`. Ключ должен оставаться
+одинаковым после перезапусков и на всех репликах Auth Service. Не храните
+его в Git. При потере или замене ключа существующим сессиям потребуется
+повторный вход. Без ключа браузерный login вернет 503.
+
+При обновлении существующего стенда пересоберите Auth Service и frontend,
+примените миграции перед началом работы с BFF:
+
+```bash
+docker compose up -d --build auth_service
+docker exec booking_auth_service alembic upgrade head
+docker compose -f docker-compose.frontend.yml up -d --build
+```
+
+Сессии сохраняются в PostgreSQL: JWT зашифрованы Fernet, идентификатор
+cookie хранится как SHA-256. Браузер получает только cookie
+`__Host-booking_session` (`Secure`, `HttpOnly`, `SameSite=Strict`, без
+`Domain`) и публичные данные пользователя с CSRF-токеном. Срок сессии
+ограничен `REFRESH_TOKEN_EXPIRE_DAYS` с момента входа. Перезагрузка страницы
+восстанавливает вход через `/api/auth/session`; logout отзывает токен и
+удаляет серверную сессию. CSRF-токен передается в `X-CSRF-Token`, также
+проверяется `Origin`, в том числе для login и регистрации.
+
+Для своего домена задайте `BFF_ALLOWED_ORIGINS` JSON-массивом HTTPS origin
+без завершающего `/`, например `'["https://tickets.example.com"]'`.
+Для отдельных лимитов входа за прокси настройте `AUTH_FORWARDED_ALLOW_IPS`
+на конкретный адрес доверенного NGINX; `*` использовать нельзя.
+
+В Kubernetes добавьте ключ в Secret `bff-session-key`, примените новую
+миграцию Auth Service и `deploy/k8s/bff-ingress.yaml` для пути `/api/*`.
+Сессии переживают перезапуск приложения; просроченные записи можно удалять
+отдельной задачей по `auth.browser_sessions.expires_at`.
+
 Сначала должен быть поднят основной backend:
 
 ```bash

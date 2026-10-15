@@ -12,16 +12,12 @@ from unittest.mock import AsyncMock, create_autospec
 import pytest
 from fastapi import HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from starlette.requests import Request
-
-from src.api.v1.auth import login, logout, refresh, register
-from src.schemas.user import (
-    LogoutRequest,
-    RefreshTokenRequest,
-    TokenPair,
-    UserRegister,
-)
+from src.api.v1.auth import _get_client_ip, login, logout, refresh, register
+from src.schemas.user import (LogoutRequest, RefreshTokenRequest, TokenPair,
+                              UserRegister)
 from src.services.auth_service import AuthService
+from starlette.requests import Request
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 
 def _build_request(
@@ -42,6 +38,27 @@ def _build_request(
         "client": (client_host, 12345),
     }
     return Request(scope)
+
+
+@pytest.mark.parametrize(("trusted_hosts", "expected_ip"), [
+    ("", "10.0.0.2"),
+    ("10.0.0.2", "203.0.113.10"),
+    ("10.0.0.3", "10.0.0.2"),
+])
+async def test_forwarded_ip_requires_explicitly_trusted_proxy(
+    trusted_hosts: str, expected_ip: str,
+) -> None:
+    """Uvicorn учитывает IP-заголовок только от доверенного прокси."""
+    request = _build_request(
+        headers={"x-forwarded-for": "203.0.113.10"},
+        client_host="10.0.0.2",
+    )
+    middleware = ProxyHeadersMiddleware(
+        AsyncMock(), trusted_hosts=trusted_hosts)
+
+    await middleware(request.scope, AsyncMock(), AsyncMock())
+
+    assert _get_client_ip(request) == expected_ip
 
 
 class TestAuthApi:
@@ -67,8 +84,12 @@ class TestAuthApi:
         assert user_in.email == "new@example.com"
         assert user_in.password == "Str0ngP@ss!"
 
-    async def test_login_uses_forwarded_ip_and_returns_token_pair(self):
-        """Проверяет ожидаемый результат."""
+    @pytest.mark.parametrize("forwarded_for", [
+        "203.0.113.10", "198.51.100.5", "203.0.113.10, 10.0.0.5", "invalid",
+    ])
+    async def test_login_ignores_supplied_ip_headers(
+            self, forwarded_for: str) -> None:
+        """Подмена IP-заголовков не меняет адрес для ограничения входа."""
         session = AsyncMock()
         session.commit = AsyncMock()
         service = create_autospec(AuthService, instance=True)
@@ -79,7 +100,8 @@ class TestAuthApi:
 
         result = await login(
             request=_build_request(
-                headers={"x-forwarded-for": "203.0.113.10, 10.0.0.5"}),
+                headers={"x-forwarded-for": forwarded_for,
+                         "x-real-ip": "192.0.2.1"}),
             form_data=OAuth2PasswordRequestForm(
                 username="user@example.com",
                 password="secret123",
@@ -94,7 +116,7 @@ class TestAuthApi:
         assert service.login.await_args.kwargs == {
             "email": "user@example.com",
             "password": "secret123",
-            "client_ip": "203.0.113.10",
+            "client_ip": "127.0.0.1",
         }
 
     async def test_login_commits_even_when_service_raises_http_exception(self):

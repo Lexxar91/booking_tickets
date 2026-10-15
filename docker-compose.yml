@@ -143,6 +143,11 @@ services:
       JWT_ISSUER: "booking-auth-service"
       JWT_PRIVATE_KEY_PATH: "/run/secrets/jwt/private.pem"
       JWT_PUBLIC_KEY_PATH: "/run/secrets/jwt/public.pem"
+      FORWARDED_ALLOW_IPS: "${AUTH_FORWARDED_ALLOW_IPS:-}"
+      BFF_SESSION_KEY: "${BFF_SESSION_KEY:-}"
+      BFF_ALLOWED_ORIGINS: '${BFF_ALLOWED_ORIGINS:-["https://127.0.0.1:3443","https://localhost:3443"]}'
+      EVENT_SERVICE_URL: "http://event_service:8000"
+      BOOKING_SERVICE_URL: "http://booking_service:8000"
     ports:
       - "127.0.0.1:8002:8000"
     volumes:

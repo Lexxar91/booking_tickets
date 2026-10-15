@@ -1,5 +1,6 @@
+from .browser_session import BrowserSession
 from .login_attempt import LoginAttempt
 from .refresh_token import RefreshToken
 from .user import User
 
-__all__ = ["User", "RefreshToken", "LoginAttempt"]
+__all__ = ["User", "RefreshToken", "LoginAttempt", "BrowserSession"]

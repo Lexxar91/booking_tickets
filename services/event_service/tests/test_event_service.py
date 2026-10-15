@@ -9,8 +9,8 @@ from unittest.mock import create_autospec
 
 import pytest
 from fastapi import HTTPException
-
 from src.repositories.event_repo import EventRepository
+from src.schemas.event import EventUpdate
 from src.services.event_service import EventServices
 
 
@@ -80,6 +80,35 @@ class TestEventServicesListEvents:
 
 class TestEventServicesUpdate:
     """Тесты обновления мероприятия."""
+    @pytest.mark.parametrize("total_tickets", [1, 99, 101, None])
+    async def test_event_update_rejects_capacity_changes(
+        self, make_event, total_tickets: int | None,
+    ) -> None:
+        """Запрещает изменение вместимости, включая явный null."""
+        service, repository = _build_service()
+        repository.get_by_event_id.return_value = make_event(
+            event_id=7, total_tickets=100)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await service.event_update(
+                7, EventUpdate(total_tickets=total_tickets))
+
+        assert exc_info.value.status_code == 409
+        repository.event_update.assert_not_called()
+
+    async def test_event_update_allows_unchanged_capacity(
+        self, make_event,
+    ) -> None:
+        """Разрешает обновить название с прежним количеством билетов."""
+        service, repository = _build_service()
+        event = make_event(event_id=7, total_tickets=100)
+        repository.get_by_event_id.return_value = event
+        patch = EventUpdate(title="Updated concert", total_tickets=100)
+
+        await service.event_update(7, patch)
+
+        repository.event_update.assert_awaited_once_with(event, patch)
+
     async def test_event_update_updates_existing_event(
             self, make_event, event_update_data):
         """Проверяет обновление данных."""

@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from pydantic import Field, PostgresDsn, SecretStr, computed_field
+from cryptography.fernet import Fernet
+from pydantic import (Field, PostgresDsn, SecretStr, computed_field,
+                      field_validator)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -45,6 +47,24 @@ class Settings(BaseSettings):
     LOGIN_RATE_LIMIT_MAX_ATTEMPTS: int = Field(default=5, ge=1, le=20)
     LOGIN_RATE_LIMIT_WINDOW_SECONDS: int = Field(default=300, ge=60, le=3600)
     LOGIN_RATE_LIMIT_BLOCK_SECONDS: int = Field(default=900, ge=60, le=86400)
+
+    BFF_SESSION_KEY: SecretStr | None = None
+    BFF_ALLOWED_ORIGINS: list[str] = Field(default_factory=lambda: [
+        "https://127.0.0.1:3443", "https://localhost:3443",
+    ])
+    EVENT_SERVICE_URL: str = "http://event_service:8000"
+    BOOKING_SERVICE_URL: str = "http://booking_service:8000"
+
+    @field_validator("BFF_SESSION_KEY", mode="before")
+    @classmethod
+    def validate_session_key(cls, value: str | SecretStr | None) -> str | None:
+        """Проверяет ключ шифрования; пустое значение отключает вход BFF."""
+        raw = (value.get_secret_value()
+               if isinstance(value, SecretStr) else value)
+        if not raw:
+            return None
+        Fernet(raw.encode())
+        return raw
 
     ENVIRONMENT: str = Field(default="development")
     LOG_LEVEL: str = Field(default="INFO")

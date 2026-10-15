@@ -59,6 +59,11 @@ spec:
                 secretKeyRef:
                   name: booking-tickets-secrets
                   key: jwt-public-key
+            - name: BFF_SESSION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: booking-tickets-secrets
+                  key: bff-session-key
           readinessProbe:
             httpGet:
               path: /health
